@@ -1,0 +1,2316 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<title>LENS</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{background:#0a0a0a;color:#f0f0f0;font-family:'Nunito','Noto Sans JP',sans-serif;font-size:var(--fs,14px);line-height:1.5;-webkit-font-smoothing:antialiased;user-select:none}
+:root{
+  --bg:#0a0a0a;--s1:#111;--s2:#181818;--s3:#222;
+  --b1:#1e1e1e;--b2:#2a2a2a;--b3:#363636;
+  --t1:#f0f0f0;--t2:#a0a0a0;--t3:#555;
+  --red:#c8000a;--reda:rgba(200,0,10,.15);
+  --r:10px;--rs:7px;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --split:40%;--mobile-prev:clamp(180px,52vw,260px);
+  --fs:14px;
+}
+
+/* ══ SPLASH ══ */
+#splash{position:fixed;inset:0;z-index:9999;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;overflow:hidden}
+#splash.out{animation:spout .7s var(--ease) forwards;pointer-events:none}
+@keyframes spout{0%{opacity:1;transform:none}50%{opacity:1;transform:scale(1.02)}100%{opacity:0;transform:scale(1.06)}}
+#splash::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.04) 3px,rgba(0,0,0,.04) 6px);pointer-events:none;z-index:1}
+
+/* Leica rings */
+.sp-rings{position:relative;width:100px;height:100px;margin-bottom:36px}
+.sp-r1{position:absolute;inset:0;border-radius:50%;border:1px solid #222;animation:sp-spin 14s linear infinite;pointer-events:none}
+.sp-r1::before{content:'';position:absolute;top:-3px;left:50%;transform:translateX(-50%);width:6px;height:6px;background:var(--red);border-radius:50%;box-shadow:0 0 12px var(--red),0 0 24px rgba(200,0,10,.4)}
+.sp-r2{position:absolute;inset:14px;border-radius:50%;border:1px solid #1a1a1a;animation:sp-spin 9s linear infinite reverse;pointer-events:none}
+.sp-r2::before{content:'';position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);width:4px;height:4px;background:#333;border-radius:50%}
+.sp-r3{position:absolute;inset:28px;border-radius:50%;border:1px solid #151515;animation:sp-spin 6s linear infinite;pointer-events:none}
+.sp-core{position:absolute;inset:38px;border-radius:50%;background:radial-gradient(circle,#1a0002 0%,#0a0a0a 100%);display:flex;align-items:center;justify-content:center;pointer-events:none}
+.sp-dot{width:12px;height:12px;background:var(--red);border-radius:50%;animation:sp-pulse 2.5s ease-in-out infinite;box-shadow:0 0 0 0 rgba(200,0,10,.4);pointer-events:none}
+@keyframes sp-spin{to{transform:rotate(360deg)}}
+@keyframes sp-pulse{0%,100%{box-shadow:0 0 0 0 rgba(200,0,10,.4);opacity:.7}50%{box-shadow:0 0 20px rgba(200,0,10,.8),0 0 0 8px rgba(200,0,10,.1);opacity:1}}
+
+.sp-logo-wrap{text-align:center;margin-bottom:44px;pointer-events:none}
+.sp-brand{font-size:9px;font-weight:800;letter-spacing:6px;color:var(--t3);margin-bottom:8px}
+.sp-name{font-size:52px;font-weight:900;letter-spacing:14px;line-height:1;position:relative;display:inline-block}
+.sp-name::after{content:'';position:absolute;bottom:-5px;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--red) 50%,transparent);animation:sp-line 2.5s ease-in-out infinite}
+@keyframes sp-line{0%,100%{opacity:.2;transform:scaleX(.6)}50%{opacity:1;transform:scaleX(1)}}
+.sp-sub{font-size:8px;font-weight:700;letter-spacing:4px;color:var(--t3);margin-top:10px}
+
+.sp-tap{display:flex;align-items:center;gap:16px;font-size:8px;font-weight:800;letter-spacing:4px;color:var(--t3);animation:sp-blink 2.5s ease-in-out infinite;pointer-events:none}
+@keyframes sp-blink{0%,100%{opacity:.15}55%{opacity:1}}
+.sp-tap-line{flex:1;max-width:30px;height:1px;background:linear-gradient(90deg,transparent,var(--b3))}
+.sp-tap-line:last-child{background:linear-gradient(90deg,var(--b3),transparent)}
+
+/* ══ APP ══ */
+#app{display:flex;width:100%;height:100%;opacity:0;animation:fadein .4s .1s ease forwards}
+@keyframes fadein{to{opacity:1}}
+
+/* MOBILE */
+@media(max-width:767px){
+  #app{flex-direction:column}
+  #left-pane{width:100%;flex-shrink:0;display:flex;flex-direction:column}
+  #preview-area{height:var(--mobile-prev);flex-shrink:0;transition:height .15s}
+  #right-pane{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+  .tabs{overflow-x:auto;overflow-y:hidden;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-shrink:0}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex:0 0 auto;min-width:54px}
+  #split-handle{display:none!important}
+  #mob-resize{display:flex;align-items:center;justify-content:center;height:18px;background:var(--bg);border-bottom:1px solid var(--b1);cursor:ns-resize;flex-shrink:0;touch-action:none}
+  #mob-resize::before{content:'';width:36px;height:3px;background:var(--b3);border-radius:2px}
+}
+/* DESKTOP */
+@media(min-width:768px){
+  #app{flex-direction:row}
+  #left-pane{width:var(--split);flex-shrink:0;height:100%;display:flex;flex-direction:column;border-right:1px solid var(--b1);overflow:hidden}
+  #preview-area{flex:1;min-height:0}
+  #right-pane{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;overflow:hidden}
+  .tabs{flex-direction:column;width:56px;flex-shrink:0;border-right:1px solid var(--b1);border-bottom:none;overflow-y:auto;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{padding:11px 4px;min-height:56px;border-bottom:none;border-right:2.5px solid transparent;flex:0 0 auto}
+  .tab.active{border-right-color:var(--red);border-bottom-color:transparent}
+  #editor-area{flex:1;display:flex;min-height:0;overflow:hidden}
+  .panel-wrap{flex:1;min-width:0}
+  #split-handle{position:fixed;top:0;bottom:0;width:8px;cursor:col-resize;z-index:200}
+  #split-handle::after{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:3px;height:44px;background:var(--b3);border-radius:4px;opacity:0;transition:opacity .18s}
+  #split-handle:hover::after,#split-handle.drag::after{opacity:1}
+  #mob-resize{display:none!important}
+}
+
+/* ══ HEADER ══ */
+header{display:flex;align-items:center;gap:5px;padding:8px 12px 8px 18px;border-bottom:1px solid var(--b1);background:var(--bg);flex-shrink:0;flex-wrap:nowrap}
+.logo{display:flex;align-items:center;gap:8px;cursor:pointer;flex-shrink:0;margin-right:auto;transition:opacity .15s}
+.logo:hover{opacity:.7}
+.hdr-dot{width:7px;height:7px;background:var(--red);border-radius:50%;flex-shrink:0;animation:glow 3s ease-in-out infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 5px rgba(200,0,10,.4)}50%{box-shadow:0 0 16px rgba(200,0,10,.9)}}
+.logo-n{font-size:18px;font-weight:900;letter-spacing:3px;line-height:1;display:flex;align-items:center;gap:5px}
+.logo-s{font-size:7px;font-weight:700;letter-spacing:3px;color:var(--t3);margin-top:1px}
+.raw-badge{font-size:6.5px;font-weight:900;background:var(--red);color:#fff;padding:1px 4px;border-radius:3px;display:none;letter-spacing:.5px}
+.mode-toggle{display:flex;background:var(--s1);border:1.5px solid var(--b2);border-radius:var(--rs);overflow:hidden;flex-shrink:0}
+.mode-btn{padding:4px 8px;font-family:inherit;font-size:9px;font-weight:700;border:none;background:none;color:var(--t3);cursor:pointer;transition:all .15s;white-space:nowrap}
+.mode-btn.on{background:var(--red);color:#fff}
+.hbtn{background:var(--s2);border:1.5px solid var(--b2);color:var(--t2);font-family:inherit;font-size:9.5px;font-weight:700;padding:4px 8px;cursor:pointer;border-radius:var(--rs);transition:all .15s;white-space:nowrap;flex-shrink:0}
+.hbtn:hover{border-color:var(--t3);color:var(--t1)}
+.hbtn.red{background:var(--red);color:#fff;border-color:var(--red)}
+.hbtn.red:hover{opacity:.85}
+
+/* ══ PREVIEW ══ */
+#preview-area{background:#0d0d0d;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;cursor:pointer;flex-shrink:0;border-bottom:1px solid var(--b1)}
+#preview-area.has-img{cursor:default}
+#preview-area.dragover{outline:3px dashed var(--red);outline-offset:-8px;background:var(--reda)}
+#checker{position:absolute;inset:0;pointer-events:none;display:none;background-image:linear-gradient(45deg,#1e1e1e 25%,transparent 25%),linear-gradient(-45deg,#1e1e1e 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#1e1e1e 75%),linear-gradient(-45deg,transparent 75%,#1e1e1e 75%);background-size:14px 14px;background-position:0 0,0 7px,7px -7px,-7px 0}
+#prev-cv{display:none;max-width:100%;max-height:100%;position:relative;z-index:1;image-rendering:auto}
+.ph-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none;z-index:1}
+.ph-ring{width:50px;height:50px;border:1.5px solid var(--b3);border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative}
+.ph-ring::before{content:'';position:absolute;inset:8px;border:1px solid var(--b2);border-radius:50%}
+.ph-ring::after{content:'';position:absolute;inset:17px;border:1px solid var(--b2);border-radius:50%}
+.ph-dot{width:6px;height:6px;background:var(--red);border-radius:50%}
+.ph-txt{font-size:9px;font-weight:700;letter-spacing:2px;color:var(--t3);text-align:center;line-height:1.6}
+#zoom-badge{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);border:1px solid var(--b2);border-radius:4px;padding:2px 6px;font-size:8.5px;font-weight:700;letter-spacing:1px;color:var(--t2);pointer-events:none;z-index:10;display:none}
+.exp-bar{position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--b1);z-index:5}
+.exp-fill{height:100%;background:var(--red);width:50%;transition:width .08s}
+
+/* Always-on histogram overlay */
+#ht-overlay{position:absolute;bottom:0;left:0;right:0;height:56px;pointer-events:none;z-index:4;display:none}
+#ht-overlay canvas{display:block;width:100%;height:100%}
+
+/* Blur selection overlay */
+#blur-sel{position:absolute;inset:0;z-index:20;display:none;cursor:crosshair}
+#blur-sel canvas{display:block;width:100%;height:100%;position:absolute;inset:0}
+.blur-sel-hint{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.8);backdrop-filter:blur(4px);border:1px solid var(--b2);border-radius:6px;padding:5px 12px;font-size:9.5px;font-weight:700;color:var(--t2);white-space:nowrap;pointer-events:none}
+
+/* ══ TABS ══ */
+.tabs{display:flex;background:var(--bg);border-bottom:1px solid var(--b1);flex-shrink:0}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 2px 6px;border:none;background:none;color:var(--t3);font-family:inherit;font-size:7.5px;font-weight:700;letter-spacing:.5px;cursor:pointer;gap:3px;border-bottom:2px solid transparent;transition:color .15s,border-color .15s}
+.tab.active{color:var(--t1);border-bottom-color:var(--red)}
+.tab svg{width:13px;height:13px;opacity:.5;transition:opacity .15s;flex-shrink:0}
+.tab.active svg{opacity:1}
+.tab span{font-size:6px;white-space:nowrap;line-height:1}
+
+/* ══ PANELS ══ */
+.panel-wrap{flex:1;overflow:hidden;min-height:0;position:relative}
+.panel{display:none;padding:12px 14px 40px;overflow-y:auto;height:100%;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
+.panel.on{display:block;animation:pin .16s var(--ease)}
+@keyframes pin{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+.pnl-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.pnl-ttl{font-size:8px;font-weight:800;letter-spacing:3px;color:var(--t3)}
+
+/* ══ SECTIONS ══ */
+.sec{margin-bottom:2px}
+.sec-hd{display:flex;align-items:center;justify-content:space-between;padding:8px 0 7px;border-bottom:1px solid var(--b1);margin-bottom:9px}
+.sec-hd.clk{cursor:pointer}
+.sec-hd.clk:hover .sec-ttl{color:var(--t2)}
+.sec-ttl{display:flex;align-items:center;gap:6px;font-size:8px;font-weight:800;letter-spacing:2px;color:var(--t3);transition:color .15s}
+.sec-bar{width:3px;height:9px;background:var(--red);border-radius:2px;flex-shrink:0}
+.sec-arr{font-size:10px;color:var(--t3);transition:transform .2s var(--ease)}
+.sec.closed .sec-arr{transform:rotate(-90deg)}
+.sec-body{overflow:hidden;transition:max-height .25s var(--ease),opacity .2s;max-height:4000px;opacity:1}
+.sec.closed .sec-body{max-height:0!important;opacity:0}
+
+/* ══ PRO SLIDER ══ */
+.sl-row{margin-bottom:12px}
+.sl-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.sl-lbl{font-size:11px;font-weight:700;color:var(--t2)}
+.sl-val-wrap{position:relative}
+.sl-val{font-size:11.5px;font-weight:800;color:var(--t3);font-variant-numeric:tabular-nums;cursor:pointer;padding:2px 5px;border-radius:4px;transition:color .12s,background .12s;min-width:38px;text-align:right;display:inline-block}
+.sl-val.nz{color:var(--red)}
+.sl-val:hover{background:var(--s2)}
+.sl-inp{position:absolute;right:0;top:-3px;width:56px;height:22px;background:var(--s2);border:1.5px solid var(--red);color:var(--t1);font-family:inherit;font-size:11.5px;font-weight:800;text-align:right;padding:0 5px;border-radius:4px;outline:none;display:none;z-index:30}
+/* SLIDER TRACK - the key fix: use a taller hit area */
+.sl-hit{position:relative;height:32px;display:flex;align-items:center;touch-action:none;cursor:ew-resize;-webkit-user-select:none;user-select:none}
+.sl-track{position:absolute;left:0;right:0;height:3px;background:var(--s3);border-radius:2px;pointer-events:none}
+.sl-fill{position:absolute;height:3px;background:var(--red);border-radius:2px;pointer-events:none;transition:none}
+.sl-mid{position:absolute;left:50%;top:0;width:1px;height:3px;background:var(--b3);transform:translateX(-50%);pointer-events:none}
+.sl-knob{position:absolute;width:15px;height:15px;background:var(--bg);border:2.5px solid var(--red);border-radius:50%;transform:translate(-50%,-50%);top:50%;pointer-events:none;box-shadow:0 2px 5px rgba(0,0,0,.6);will-change:left;transition:none}
+.sl-hit.drag .sl-knob{box-shadow:0 0 0 6px var(--reda);transform:translate(-50%,-50%) scale(1.12)}
+
+/* ══ EASY CARD SLIDER ══ */
+.ec{background:var(--s1);border:1.5px solid var(--b1);border-radius:11px;padding:12px 12px 10px;margin-bottom:9px}
+.ec-hd{display:flex;align-items:center;gap:7px;margin-bottom:2px}
+.ec-ico{font-size:16px}
+.ec-ttl{font-size:12px;font-weight:800;color:var(--t1)}
+.ec-sub{font-size:9px;color:var(--t3);font-weight:600;margin-bottom:10px}
+.ec-val-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.ec-val{font-size:12px;font-weight:800;color:var(--t3);font-variant-numeric:tabular-nums}
+.ec-val.nz{color:var(--red)}
+.es-hit{position:relative;height:38px;display:flex;align-items:center;touch-action:none;cursor:ew-resize;-webkit-user-select:none;user-select:none}
+.es-bg{position:absolute;left:0;right:0;height:5px;background:var(--s3);border-radius:3px;pointer-events:none}
+.es-fill{position:absolute;height:5px;border-radius:3px;pointer-events:none;background:linear-gradient(90deg,var(--red),#ff3355);transition:none}
+.es-mid{position:absolute;left:50%;top:0;width:2px;height:5px;background:var(--b3);transform:translateX(-50%);pointer-events:none}
+.es-knob{position:absolute;width:22px;height:22px;background:#fff;border:3px solid var(--red);border-radius:50%;transform:translate(-50%,-50%);top:50%;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.6);will-change:left;transition:none}
+.es-hit.drag .es-knob{box-shadow:0 0 0 7px var(--reda);transform:translate(-50%,-50%) scale(1.1)}
+
+/* ══ FILTER GRID ══ */
+.fg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
+.fg-cat{font-size:7.5px;font-weight:800;letter-spacing:2px;color:var(--t3);grid-column:1/-1;margin-top:6px;padding-bottom:4px;border-bottom:1px solid var(--b1)}
+.fg-cat:first-child{margin-top:0}
+.fc{background:var(--s2);border:1.5px solid var(--b2);border-radius:9px;padding:9px 3px;cursor:pointer;text-align:center;transition:all .14s;position:relative;overflow:hidden}
+.fc:hover{border-color:var(--b3)}
+.fc.on{border-color:var(--red);background:var(--reda)}
+.fc::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--red);transform:scaleX(0);transform-origin:left;transition:transform .18s var(--ease)}
+.fc.on::after{transform:scaleX(1)}
+.fi{font-size:18px;margin-bottom:2px}
+.fn{font-size:8.5px;font-weight:800;color:var(--t2);line-height:1.2}
+.fc.on .fn{color:var(--t1)}
+
+/* ══ MISC ══ */
+.ghost{background:none;border:1.5px solid var(--b2);color:var(--t2);font-size:10px;font-weight:700;padding:6px 11px;cursor:pointer;font-family:inherit;border-radius:var(--rs);transition:all .14s}
+.ghost:hover{border-color:var(--t2);color:var(--t1);background:var(--s2)}
+.solid{background:var(--red);color:#fff;border:none;font-size:10px;font-weight:700;padding:7px 14px;cursor:pointer;font-family:inherit;border-radius:var(--rs);transition:opacity .14s,transform .1s}
+.solid:active{opacity:.85;transform:scale(.97)}
+.divider{height:1px;background:var(--b1);margin:10px 0}
+.inp-lbl{font-size:8px;font-weight:700;letter-spacing:1.5px;color:var(--t3);margin-bottom:4px}
+input[type=number],input[type=text]{background:var(--s1);border:1.5px solid var(--b1);color:var(--t1);padding:8px 10px;font-size:12px;font-weight:600;font-family:inherit;width:100%;outline:none;border-radius:var(--rs);transition:border-color .14s}
+input:focus{border-color:var(--red)}
+input::placeholder{color:var(--t3)}
+
+/* ══ CROP ══ */
+.crop-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:11px}
+.crop-card{border:1.5px solid var(--b1);background:var(--s1);padding:10px 12px 9px;cursor:pointer;border-radius:var(--r);overflow:hidden;position:relative;transition:all .14s}
+.crop-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--red);transform:scaleX(0);transform-origin:left;transition:transform .2s var(--ease)}
+.crop-card.on::after{transform:scaleX(1)}
+.crop-ratio{font-size:13px;font-weight:900;color:var(--t2);margin-bottom:2px}
+.crop-card.on .crop-ratio{color:var(--t1)}
+.crop-nm{font-size:8.5px;font-weight:700;color:var(--t3)}
+
+/* ══ ROTATE ══ */
+.rot-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:11px}
+.rot-btn{background:var(--s1);border:1.5px solid var(--b1);color:var(--t2);font-size:10.5px;font-weight:700;padding:11px 8px;cursor:pointer;font-family:inherit;border-radius:var(--r);display:flex;align-items:center;justify-content:center;gap:5px;transition:all .14s}
+.rot-btn:hover{background:var(--s2);border-color:var(--b2);color:var(--t1)}
+.rot-btn:active{transform:scale(.96)}
+
+/* ══ MOSAIC ══ */
+.mos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:11px}
+.mos-card{border:1.5px solid var(--b1);background:var(--s1);border-radius:var(--r);padding:11px 7px;text-align:center;cursor:pointer;transition:all .14s}
+.mos-card.on{border-color:var(--red);background:var(--reda)}
+.mos-sz{font-size:13px;font-weight:900;color:var(--t2)}
+.mos-card.on .mos-sz{color:var(--t1)}
+.mos-lbl{font-size:8.5px;color:var(--t3);font-weight:700}
+
+/* ══ RESOLUTION ══ */
+.res-row{display:flex;align-items:flex-end;gap:9px;margin-bottom:11px}
+.res-x{color:var(--t3);font-size:15px;padding-bottom:7px}
+.res-iw{flex:1}
+.rp-cat{font-size:7.5px;font-weight:800;letter-spacing:2px;color:var(--t3);margin-top:9px;margin-bottom:3px;padding-bottom:3px;border-bottom:1px solid var(--b1)}
+.rp-cat:first-child{margin-top:0}
+.rp-item{display:flex;justify-content:space-between;align-items:center;padding:9px 11px;border:1.5px solid var(--b1);border-radius:var(--r);background:var(--s1);cursor:pointer;position:relative;overflow:hidden;transition:all .14s;margin-bottom:3px}
+.rp-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--red);transform:scaleY(0);transform-origin:bottom;border-radius:0 2px 2px 0;transition:transform .18s var(--ease)}
+.rp-item.on{background:var(--s2);border-color:var(--b2)}
+.rp-item.on::before{transform:scaleY(1)}
+.rp-nm{font-size:11.5px;font-weight:700;color:var(--t2)}
+.rp-item.on .rp-nm{color:var(--t1)}
+.rp-dim{font-size:9.5px;color:var(--t3)}
+
+/* ══ RGB CURVE ══ */
+.cv-wrap{background:var(--s1);border:1.5px solid var(--b1);border-radius:var(--r);padding:10px;margin-bottom:11px}
+.cv-tabs{display:flex;gap:4px;margin-bottom:8px}
+.cv-tab{flex:1;padding:4px;border:1.5px solid var(--b2);background:none;font-family:inherit;font-size:9px;font-weight:700;cursor:pointer;border-radius:var(--rs);color:var(--t3);transition:all .14s}
+.cv-tab.on{color:#fff}
+.cv-tab[data-ch=L].on{background:var(--s3);border-color:var(--b3)}
+.cv-tab[data-ch=R].on{background:#8b0000;border-color:#8b0000}
+.cv-tab[data-ch=G].on{background:#005500;border-color:#005500}
+.cv-tab[data-ch=B].on{background:#00008b;border-color:#00008b}
+#cv-canvas{width:100%;height:150px;display:block;border-radius:5px;cursor:crosshair;touch-action:none}
+
+/* ══ HISTOGRAM ══ */
+.ht-wrap{background:var(--s1);border:1.5px solid var(--b1);border-radius:var(--r);padding:10px;margin-bottom:11px}
+.ht-tabs{display:flex;gap:4px;margin-bottom:8px}
+.ht-tab{flex:1;padding:4px;border:1.5px solid var(--b2);background:none;font-family:inherit;font-size:8.5px;font-weight:700;cursor:pointer;border-radius:var(--rs);color:var(--t3);transition:all .14s}
+.ht-tab.on{background:var(--s3);border-color:var(--b3);color:var(--t1)}
+#ht-canvas{width:100%;height:75px;display:block;border-radius:3px}
+
+/* ══ HSL ══ */
+.hsl-cr{margin-bottom:12px}
+.hsl-hd{display:flex;align-items:center;gap:7px;margin-bottom:7px}
+.hsl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.hsl-nm{font-size:10.5px;font-weight:700;color:var(--t2)}
+.hsl-sub{display:grid;grid-template-columns:22px 1fr 34px;align-items:center;gap:5px;margin-bottom:4px}
+.hsl-sl{font-size:8px;font-weight:700;color:var(--t3);text-align:center}
+.hsl-v{font-size:10.5px;font-weight:800;color:var(--t3);text-align:right;font-variant-numeric:tabular-nums}
+.hsl-v.nz{color:var(--red)}
+
+/* ══ PRESETS ══ */
+.pi-box{background:var(--s1);border:1.5px solid var(--b1);padding:12px;margin-bottom:11px;border-radius:var(--r)}
+.pi-btns{display:flex;gap:7px;margin-top:8px}
+.pc{display:flex;align-items:center;gap:8px;border:1.5px solid var(--b1);background:var(--s1);padding:10px 11px;margin-bottom:6px;border-radius:var(--r);transition:all .14s}
+.pc:hover{border-color:var(--b2);background:var(--s2)}
+.pc.builtin{border-left:3px solid var(--red)}
+.pc-info{flex:1;min-width:0}
+.pc-nm{font-size:12.5px;font-weight:700;color:var(--t1);margin-bottom:2px}
+.pc-meta{font-size:8.5px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.app-btn{background:var(--red);color:#fff;border:none;font-size:9px;font-weight:700;padding:6px 10px;cursor:pointer;font-family:inherit;border-radius:var(--rs);white-space:nowrap}
+.del-btn{border:1.5px solid var(--b2);background:none;color:var(--t3);font-size:11.5px;padding:5px 9px;cursor:pointer;border-radius:var(--rs);transition:all .14s}
+.del-btn:hover{border-color:var(--red);color:var(--red)}
+
+/* ══ INFO ══ */
+.info-r{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--b1);gap:10px}
+.info-k{font-size:8.5px;font-weight:700;letter-spacing:.8px;color:var(--t3);flex-shrink:0}
+.info-v{font-size:10.5px;font-weight:600;color:var(--t2);text-align:right;word-break:break-all}
+.info-sec{margin-top:7px}
+.info-sh{display:flex;align-items:center;justify-content:space-between;padding:8px 11px;background:var(--s1);border:1.5px solid var(--b1);border-radius:var(--r);cursor:pointer;margin-bottom:3px;transition:background .14s}
+.info-sh:hover{background:var(--s2)}
+.info-sh.op{border-radius:var(--r) var(--r) 0 0;margin-bottom:0}
+.info-st{font-size:10px;font-weight:700;color:var(--t2)}
+.info-ch{font-size:9.5px;color:var(--t3);transition:transform .2s var(--ease)}
+.info-sh.op .info-ch{transform:rotate(180deg)}
+.info-sb{background:var(--s1);border:1.5px solid var(--b2);border-top:none;border-radius:0 0 var(--r) var(--r);padding:0 11px;overflow:hidden;max-height:0;transition:max-height .28s var(--ease);margin-bottom:3px}
+.info-sb.op{max-height:600px;padding:2px 11px 8px}
+.idr{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--b1);gap:7px}
+.idr:last-child{border-bottom:none}
+.idk{font-size:8px;font-weight:700;letter-spacing:.8px;color:var(--t3);flex-shrink:0}
+.idv{font-size:9.5px;font-weight:600;color:var(--t2);text-align:right}
+.idv.r{color:var(--red)}
+
+/* ══ EMPTY ══ */
+.empty{text-align:center;padding:36px 0}
+.e-ring{width:40px;height:40px;border:1.5px solid var(--b2);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px}
+.e-dot{width:4px;height:4px;background:var(--b2);border-radius:50%}
+.e-ttl{font-size:10.5px;font-weight:700;letter-spacing:2px;color:var(--t3);margin-bottom:4px}
+.e-sub{font-size:9px;color:#252525;letter-spacing:.5px}
+
+/* ══ BOTTOM BAR ══ */
+#bot{display:none;gap:7px;padding:9px 12px;border-top:1px solid var(--b1);background:var(--bg);flex-shrink:0}
+.rst{flex:1;border:1.5px solid var(--b2);background:none;color:var(--t2);padding:11px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:inherit;border-radius:var(--rs);transition:all .14s}
+.rst:hover{border-color:var(--t2);color:var(--t1);background:var(--s2)}
+.exp-b{flex:2;background:var(--red);color:#fff;border:none;padding:11px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;border-radius:var(--rs);transition:opacity .14s,transform .1s}
+.exp-b:active{opacity:.85;transform:scale(.98)}
+
+/* ══ OVERLAY MODAL BASE ══ */
+.ovl{position:fixed;inset:0;z-index:850;background:rgba(0,0,0,.82);display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(8px)}
+.ovl.op{display:flex;animation:mfade .22s ease}
+@keyframes mfade{from{opacity:0}to{opacity:1}}
+.sheet{background:var(--s1);border:1.5px solid var(--b2);border-radius:var(--r) var(--r) 0 0;padding:20px 18px 40px;width:100%;max-width:500px;animation:shup .25s var(--ease);max-height:90vh;overflow-y:auto}
+@keyframes shup{from{transform:translateY(28px)}to{transform:none}}
+.modal-ttl{font-size:11.5px;font-weight:800;letter-spacing:2.5px;color:var(--t2);margin-bottom:12px}
+.modal-btns{display:flex;gap:7px}
+
+/* ══ EXPORT SHEET ══ */
+.fmt-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.fmt-opt{border:1.5px solid var(--b2);background:var(--s2);padding:11px;border-radius:var(--rs);cursor:pointer;text-align:center;transition:all .14s}
+.fmt-opt.on{border-color:var(--red);background:var(--reda)}
+.fmt-nm{font-size:10.5px;font-weight:700;color:var(--t2)}
+.fmt-opt.on .fmt-nm{color:var(--t1)}
+.fmt-sub{font-size:8.5px;color:var(--t3);margin-top:2px}
+
+/* ══ CONFIRM ══ */
+#confirm{position:fixed;inset:0;z-index:9800;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;backdrop-filter:blur(10px)}
+#confirm.op{display:flex;animation:mfade .2s ease}
+.confirm-box{background:var(--s1);border:1.5px solid var(--b2);border-radius:14px;padding:26px 20px;max-width:300px;width:90%;text-align:center}
+.confirm-ico{font-size:28px;margin-bottom:9px}
+.confirm-ttl{font-size:14px;font-weight:800;color:var(--t1);margin-bottom:7px}
+.confirm-sub{font-size:11px;color:var(--t2);margin-bottom:20px;line-height:1.6;white-space:pre-line}
+.confirm-btns{display:flex;gap:9px}
+.c-ok{flex:1;background:var(--red);color:#fff;border:none;padding:11px;font-size:11.5px;font-weight:700;border-radius:var(--rs);cursor:pointer;font-family:inherit}
+.c-no{flex:1;background:none;border:1.5px solid var(--b2);color:var(--t2);padding:11px;font-size:11.5px;font-weight:700;border-radius:var(--rs);cursor:pointer;font-family:inherit}
+
+/* ══ SETTINGS ══ */
+.s-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--b1)}
+.s-row:last-child{border-bottom:none}
+.s-lbl{font-size:11.5px;font-weight:700;color:var(--t1)}
+.s-sub{font-size:9px;color:var(--t3);margin-top:2px}
+.s-tog{position:relative;width:42px;height:22px;flex-shrink:0}
+.s-tog input{opacity:0;width:0;height:0;position:absolute}
+.s-tog-sl{position:absolute;inset:0;background:var(--b2);border-radius:22px;cursor:pointer;transition:background .2s}
+.s-tog-sl::before{content:'';position:absolute;height:16px;width:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .2s}
+.s-tog input:checked+.s-tog-sl{background:var(--red)}
+.s-tog input:checked+.s-tog-sl::before{transform:translateX(20px)}
+.seg{display:flex;background:var(--s2);border:1.5px solid var(--b2);border-radius:var(--rs);overflow:hidden;flex-shrink:0}
+.seg-b{flex:1;padding:4px 8px;font-family:inherit;font-size:9px;font-weight:700;border:none;background:none;color:var(--t3);cursor:pointer;transition:all .15s;white-space:nowrap}
+.seg-b.on{background:var(--red);color:#fff}
+.s-sec{font-size:7.5px;font-weight:800;letter-spacing:3px;color:var(--t3);margin:14px 0 5px}
+
+/* ══ HELP ══ */
+.help-step{display:flex;gap:11px;margin-bottom:16px}
+.help-num{width:26px;height:26px;background:var(--red);color:#fff;border-radius:50%;font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.help-ttl{font-size:12.5px;font-weight:800;color:var(--t1);margin-bottom:3px}
+.help-desc{font-size:10.5px;color:var(--t2);line-height:1.6}
+
+/* ══ SCROLLBAR ══ */
+::-webkit-scrollbar{width:2px;height:2px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--b3);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="sp-rings">
+    <div class="sp-r1"></div><div class="sp-r2"></div><div class="sp-r3"></div>
+    <div class="sp-core"><div class="sp-dot"></div></div>
+  </div>
+  <div class="sp-logo-wrap">
+    <div class="sp-brand">PHOTO EDITOR</div>
+    <div class="sp-name">LENS</div>
+    <div class="sp-sub" id="sp-sub">フォトエディター</div>
+  </div>
+  <div class="sp-tap">
+    <div class="sp-tap-line"></div>
+    <span id="sp-cta">タップして開始</span>
+    <div class="sp-tap-line"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- LEFT -->
+  <div id="left-pane">
+    <header>
+      <div class="logo" onclick="goHome()">
+        <div class="hdr-dot"></div>
+        <div>
+          <div class="logo-n">LENS<span class="raw-badge" id="raw-badge"></span></div>
+          <div class="logo-s" id="hdr-sub">PHOTO EDITOR</div>
+        </div>
+      </div>
+      <div class="mode-toggle">
+        <button class="mode-btn" id="mb-easy" onclick="setMode('easy')">かんたん</button>
+        <button class="mode-btn on" id="mb-pro" onclick="setMode('pro')">PRO</button>
+      </div>
+      <button class="hbtn" id="lang-btn" onclick="toggleLang()">EN</button>
+      <button class="hbtn" id="stg-btn" onclick="openSettings()">⚙</button>
+      <button class="hbtn" id="open-btn" onclick="triggerOpen()">開く</button>
+      <button class="hbtn red" id="exp-hbtn" style="display:none" onclick="openExport()">書き出す</button>
+      <input id="fi" type="file" accept="image/*,.raw,.cr2,.cr3,.cr4,.nef,.nrw,.arw,.sr2,.orf,.rw2,.pef,.ptx,.dng,.heic,.heif,.avif,.tiff,.tif,.bmp,.webp" style="display:none" onchange="onFI(event)"/>
+    </header>
+
+    <div id="preview-area" onclick="onPreviewClick()">
+      <div id="checker"></div>
+      <div class="ph-wrap" id="ph">
+        <div class="ph-ring"><div class="ph-dot"></div></div>
+        <div class="ph-txt" id="ph-txt">タップまたはドロップして<br>写真を開く</div>
+      </div>
+      <canvas id="prev-cv"></canvas>
+      <div id="ht-overlay"><canvas id="ht-ov-cv"></canvas></div>
+      <div id="zoom-badge">100%</div>
+      <div id="blur-sel">
+        <canvas id="blur-sel-cv"></canvas>
+        <div class="blur-sel-hint" id="blur-hint">ドラッグして範囲をぼかす — ダブルタップで終了</div>
+      </div>
+      <div class="exp-bar"><div class="exp-fill" id="exp-fill"></div></div>
+    </div>
+
+    <div id="mob-resize"></div>
+    <div id="split-handle"></div>
+  </div>
+
+  <!-- RIGHT -->
+  <div id="right-pane">
+    <div id="editor-area">
+      <nav class="tabs" id="tabs">
+        <button class="tab" data-tab="efilter" data-m="easy" onclick="sw('efilter')">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2l1.5 3 3.5.5-2.5 2.5.6 3.5L8 10l-3.1 1.5.6-3.5L3 5.5l3.5-.5z"/></svg>
+          <span id="tl-efilter">フィルター</span></button>
+        <button class="tab" data-tab="eadj" data-m="easy" onclick="sw('eadj')">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"/><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>
+          <span id="tl-eadj">調整</span></button>
+        <button class="tab" data-tab="tone" data-m="pro" onclick="sw('tone')">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5"/><line x1="8" y1="3" x2="8" y2="13"/></svg>
+          <span id="tl-tone">トーン</span></button>
+        <button class="tab" data-tab="color" data-m="pro" onclick="sw('color')">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2a6 6 0 100 12A6 6 0 008 2z"/><path d="M8 2c2 2 2 8 0 12M8 2C6 4 6 10 8 14"/></svg>
+          <span id="tl-color">カラー</span></button>
+        <button class="tab" data-tab="detail" data-m="pro" onclick="sw('detail')">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8h10M8 3v10M4.5 4.5l7 7M11.5 4.5l-7 7"/></svg>
+          <span id="tl-detail">詳細</span></button>
+        <button class="tab" data-tab="xform" data-m="pro" onclick="sw('xform')">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3L2 8l3 5M11 3l3 5-3 5"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
+          <span id="tl-xform">変形</span></button>
+        <button class="tab" data-tab="cut" onclick="sw('cut')">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="10" height="10" rx="1"/><line x1="3" y1="7" x2="13" y2="7"/><line x1="7" y1="3" x2="7" y2="13"/></svg>
+          <span id="tl-cut">カット</span></button>
+        <button class="tab" data-tab="mosaic" data-m="pro" onclick="sw('mosaic')">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+          <span id="tl-mosaic">モザイク</span></button>
+        <button class="tab" data-tab="blur" data-m="pro" onclick="sw('blur')">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5"/><circle cx="8" cy="8" r="2.5" stroke-dasharray="1.5 1.5"/></svg>
+          <span id="tl-blur">ぼかし</span></button>
+        <button class="tab" data-tab="size" data-m="pro" onclick="sw('size')">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="8" height="8" rx="1"/><rect x="6" y="2" width="8" height="8" rx="1"/></svg>
+          <span id="tl-size">サイズ</span></button>
+        <button class="tab" data-tab="preset" onclick="sw('preset')">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 8a4 4 0 108 0 4 4 0 00-8 0z"/><path d="M8 5v3l2 2"/></svg>
+          <span id="tl-preset">プリセット</span></button>
+        <button class="tab" data-tab="info" data-m="pro" onclick="sw('info')">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"/><line x1="8" y1="7" x2="8" y2="11"/><circle cx="8" cy="5" r=".5" fill="currentColor"/></svg>
+          <span id="tl-info">情報</span></button>
+      </nav>
+
+      <div class="panel-wrap">
+
+        <!-- EASY FILTER -->
+        <div class="panel" id="panel-efilter">
+          <div class="pnl-hd"><div class="pnl-ttl" id="pt-efilter">フィルター & ルック</div></div>
+          <div id="cheki-box" style="background:linear-gradient(135deg,#1a1a1a,#1e1e1e);border:1.5px solid #252525;border-radius:11px;padding:13px;margin-bottom:14px">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
+              <span style="font-size:18px">📷</span>
+              <div>
+                <div style="font-size:12.5px;font-weight:800;color:#f0f0f0" id="cheki-ttl">チェキ風に仕上げる</div>
+                <div style="font-size:9px;color:#555;margin-top:1px" id="cheki-sub">インスタントフォト風</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px">
+              <button onclick="applyCheki('soft')" style="background:#1e1e1e;border:1.5px solid #2a2a2a;color:#ccc;font-size:9px;font-weight:700;padding:8px 3px;border-radius:7px;cursor:pointer;font-family:inherit" id="chk-soft">🌸 ソフト</button>
+              <button onclick="applyCheki('warm')" style="background:#1e1e1e;border:1.5px solid #2a2a2a;color:#ccc;font-size:9px;font-weight:700;padding:8px 3px;border-radius:7px;cursor:pointer;font-family:inherit" id="chk-warm">☀️ ウォーム</button>
+              <button onclick="applyCheki('cool')" style="background:#1e1e1e;border:1.5px solid #2a2a2a;color:#ccc;font-size:9px;font-weight:700;padding:8px 3px;border-radius:7px;cursor:pointer;font-family:inherit" id="chk-cool">🧊 クール</button>
+            </div>
+          </div>
+          <div class="fg" id="filter-grid"></div>
+          <div class="pnl-ttl" style="margin-bottom:9px" id="filt-str-lbl">フィルターの強さ</div>
+          <div id="filt-intensity"></div>
+          <div style="margin-top:20px;text-align:center">
+            <button class="ghost" onclick="openHelp()" id="help-btn" style="width:100%;font-size:10.5px">❓ ヘルプ / 使い方</button>
+          </div>
+        </div>
+
+        <!-- EASY ADJ -->
+        <div class="panel" id="panel-eadj">
+          <div class="pnl-hd">
+            <div class="pnl-ttl" id="pt-eadj">かんたん調整</div>
+            <button class="ghost" id="rst-easy" onclick="resetAdj()">リセット</button>
+          </div>
+          <div id="easy-cards"></div>
+        </div>
+
+        <!-- PRO TONE -->
+        <div class="panel on" id="panel-tone">
+          <div class="pnl-hd">
+            <div class="pnl-ttl" id="pt-tone">トーン・露光</div>
+            <button class="ghost" id="rst-tone" onclick="resetAdj()">リセット</button>
+          </div>
+          <div id="sl-tone"></div>
+          <div class="sec">
+            <div class="sec-hd clk" onclick="toggleSec(this)">
+              <div class="sec-ttl"><div class="sec-bar"></div><span id="ht-lbl">ヒストグラム</span></div>
+              <span class="sec-arr">▾</span>
+            </div>
+            <div class="sec-body">
+              <div class="ht-wrap">
+                <div class="ht-tabs">
+                  <button class="ht-tab on" id="ht-rgb" onclick="setHtMode(this,'rgb')">RGB</button>
+                  <button class="ht-tab" id="ht-luma" onclick="setHtMode(this,'luma')">LUMA</button>
+                </div>
+                <canvas id="ht-canvas"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PRO COLOR -->
+        <div class="panel" id="panel-color">
+          <div class="pnl-ttl" style="margin-bottom:11px" id="pt-color">カラーグレーディング</div>
+          <div id="sl-color"></div>
+          <div class="sec">
+            <div class="sec-hd"><div class="sec-ttl"><div class="sec-bar"></div><span id="cv-lbl">RGBカーブ</span></div></div>
+            <div class="sec-body">
+              <div class="cv-wrap">
+                <div class="cv-tabs">
+                  <button class="cv-tab on" data-ch="L" onclick="setCvCh(this,'L')">LUMA</button>
+                  <button class="cv-tab" data-ch="R" onclick="setCvCh(this,'R')">R</button>
+                  <button class="cv-tab" data-ch="G" onclick="setCvCh(this,'G')">G</button>
+                  <button class="cv-tab" data-ch="B" onclick="setCvCh(this,'B')">B</button>
+                </div>
+                <canvas id="cv-canvas"></canvas>
+                <div style="font-size:7.5px;color:var(--t3);margin-top:5px" id="cv-hint">ドラッグで移動 · タップで追加 · ダブルタップで削除</div>
+              </div>
+            </div>
+          </div>
+          <div class="sec">
+            <div class="sec-hd clk" onclick="toggleSec(this)">
+              <div class="sec-ttl"><div class="sec-bar"></div><span id="hsl-sec-lbl">HSLミキサー</span></div>
+              <span class="sec-arr">▾</span>
+            </div>
+            <div class="sec-body"><div id="hsl-panel"></div></div>
+          </div>
+          <div class="sec closed">
+            <div class="sec-hd clk" onclick="toggleSec(this)">
+              <div class="sec-ttl"><div class="sec-bar"></div><span id="cmix-lbl">カラーミックス (上級)</span></div>
+              <span class="sec-arr">▾</span>
+            </div>
+            <div class="sec-body"><div id="sl-adv"></div></div>
+          </div>
+        </div>
+
+        <!-- PRO DETAIL -->
+        <div class="panel" id="panel-detail">
+          <div class="pnl-ttl" style="margin-bottom:11px" id="pt-detail">ディテール・光学</div>
+          <div id="sl-detail"></div>
+        </div>
+
+        <!-- PRO TRANSFORM -->
+        <div class="panel" id="panel-xform">
+          <div class="pnl-ttl" style="margin-bottom:11px" id="pt-xform">回転・変形</div>
+          <div class="rot-grid">
+            <button class="rot-btn" onclick="doRotate(-90)"><span style="font-size:15px">↺</span><span id="rot-l">左回転</span></button>
+            <button class="rot-btn" onclick="doRotate(90)"><span style="font-size:15px">↻</span><span id="rot-r">右回転</span></button>
+            <button class="rot-btn" onclick="doFlipH()"><span style="font-size:15px">⇄</span><span id="flip-h">水平反転</span></button>
+            <button class="rot-btn" onclick="doFlipV()"><span style="font-size:15px">⇅</span><span id="flip-v">垂直反転</span></button>
+          </div>
+          <div id="sl-xform"></div>
+        </div>
+
+        <!-- CUT -->
+        <div class="panel" id="panel-cut">
+          <div class="pnl-ttl" style="margin-bottom:11px" id="pt-cut">カット・フレーム</div>
+          <div style="font-size:8px;color:var(--t3);font-weight:700;letter-spacing:1.5px;margin-bottom:7px" id="cut-basic">基本</div>
+          <div class="crop-grid">
+            <div class="crop-card on" onclick="pickCrop(this)"><div class="crop-ratio">1:1</div><div class="crop-nm" id="cr-sq">スクエア</div></div>
+            <div class="crop-card" onclick="pickCrop(this)"><div class="crop-ratio">4:3</div><div class="crop-nm" id="cr-std">スタンダード</div></div>
+            <div class="crop-card" onclick="pickCrop(this)"><div class="crop-ratio">16:9</div><div class="crop-nm" id="cr-wide">ワイド</div></div>
+            <div class="crop-card" onclick="pickCrop(this)"><div class="crop-ratio">3:4</div><div class="crop-nm" id="cr-port">ポートレート</div></div>
+            <div class="crop-card" onclick="pickCrop(this)"><div class="crop-ratio">9:16</div><div class="crop-nm" id="cr-story">ストーリー</div></div>
+            <div class="crop-card" onclick="pickCrop(this)"><div class="crop-ratio">FREE</div><div class="crop-nm" id="cr-free">カスタム</div></div>
+          </div>
+          <div style="font-size:8px;color:var(--t3);font-weight:700;letter-spacing:1.5px;margin:9px 0 7px">📸 証明写真</div>
+          <div class="crop-grid">
+            <div class="crop-card" onclick="pickCrop(this,30,40)"><div class="crop-ratio" style="font-size:10px">30×40</div><div class="crop-nm">パスポート</div></div>
+            <div class="crop-card" onclick="pickCrop(this,35,45)"><div class="crop-ratio" style="font-size:10px">35×45</div><div class="crop-nm">マイナンバー</div></div>
+            <div class="crop-card" onclick="pickCrop(this,24,30)"><div class="crop-ratio" style="font-size:10px">24×30</div><div class="crop-nm">履歴書S</div></div>
+            <div class="crop-card" onclick="pickCrop(this,40,50)"><div class="crop-ratio" style="font-size:10px">40×50</div><div class="crop-nm">履歴書L</div></div>
+            <div class="crop-card" onclick="pickCrop(this,25,30)"><div class="crop-ratio" style="font-size:10px">25×30</div><div class="crop-nm">運転免許</div></div>
+            <div class="crop-card" onclick="pickCrop(this,45,45)"><div class="crop-ratio" style="font-size:10px">45×45</div><div class="crop-nm">ビザ用</div></div>
+          </div>
+          <div style="font-size:8px;color:var(--t3);font-weight:700;letter-spacing:1.5px;margin:9px 0 7px">📮 プリント判</div>
+          <div class="crop-grid">
+            <div class="crop-card" onclick="pickCrop(this,89,127)"><div class="crop-ratio" style="font-size:10px">L判</div><div class="crop-nm">89×127</div></div>
+            <div class="crop-card" onclick="pickCrop(this,102,152)"><div class="crop-ratio" style="font-size:10px">2L判</div><div class="crop-nm">102×152</div></div>
+            <div class="crop-card" onclick="pickCrop(this,62,99)"><div class="crop-ratio" style="font-size:10px">チェキ</div><div class="crop-nm">62×99</div></div>
+            <div class="crop-card" onclick="pickCrop(this,100,148)"><div class="crop-ratio" style="font-size:10px">はがき</div><div class="crop-nm">100×148</div></div>
+          </div>
+        </div>
+
+        <!-- MOSAIC -->
+        <div class="panel" id="panel-mosaic">
+          <div class="pnl-ttl" style="margin-bottom:7px" id="pt-mosaic">モザイク</div>
+          <div id="mosaic-desc" style="font-size:10.5px;color:var(--t2);margin-bottom:12px">モザイクのサイズを選択</div>
+          <div class="mos-grid" id="mos-grid"></div>
+          <button class="ghost" id="clear-mos" style="width:100%" onclick="clearMosaic()">モザイクを消す</button>
+        </div>
+
+        <!-- BLUR (range selection) -->
+        <div class="panel" id="panel-blur">
+          <div class="pnl-ttl" style="margin-bottom:7px" id="pt-blur">範囲ぼかし</div>
+          <div style="font-size:10.5px;color:var(--t2);margin-bottom:14px;line-height:1.6" id="blur-desc">プレビュー上でドラッグして範囲を選択し、ぼかしを適用します。</div>
+          <div id="sl-blur-strength"></div>
+          <button class="solid" id="blur-start-btn" style="width:100%;margin-bottom:8px" onclick="startBlurSel()">🎯 範囲選択を開始</button>
+          <button class="ghost" id="blur-clear-btn" style="width:100%" onclick="clearBlurRegions()">ぼかしを消す</button>
+          <div style="margin-top:12px;padding:10px;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs)">
+            <div style="font-size:8px;font-weight:700;letter-spacing:1.5px;color:var(--t3);margin-bottom:5px" id="blur-tip-lbl">使い方</div>
+            <div style="font-size:9.5px;color:var(--t3);line-height:1.6" id="blur-tip-txt">「開始」を押して写真の上でドラッグ。円形の範囲がぼかされます。ダブルタップで終了。</div>
+          </div>
+        </div>
+
+        <!-- SIZE -->
+        <div class="panel" id="panel-size">
+          <div class="pnl-ttl" style="margin-bottom:11px" id="pt-size">出力サイズ</div>
+          <div class="res-row">
+            <div class="res-iw"><div class="inp-lbl" id="sw-lbl">横幅 px</div><input type="number" id="rw" value="1080" oninput="onResChange()"/></div>
+            <div class="res-x">×</div>
+            <div class="res-iw"><div class="inp-lbl" id="sh-lbl">縦幅 px</div><input type="number" id="rh" value="1080" oninput="onResChange()"/></div>
+          </div>
+          <div class="divider"></div>
+          <div id="rp-list"></div>
+        </div>
+
+        <!-- PRESET -->
+        <div class="panel" id="panel-preset">
+          <div class="pnl-hd">
+            <div class="pnl-ttl" id="pt-preset">プリセット</div>
+            <button class="solid" id="pi-open-btn" onclick="showPI()">＋ 保存</button>
+          </div>
+          <div id="pi-box" style="display:none" class="pi-box">
+            <div class="inp-lbl" id="pi-nm-lbl">プリセット名</div>
+            <input type="text" id="pi-name" style="margin-bottom:8px"/>
+            <div class="pi-btns">
+              <button class="solid" id="pi-save-btn" style="flex:1" onclick="savePreset()">保存</button>
+              <button class="ghost" id="pi-cancel-btn" style="flex:1" onclick="hidePI()">キャンセル</button>
+            </div>
+          </div>
+          <div id="preset-list"></div>
+        </div>
+
+        <!-- INFO -->
+        <div class="panel" id="panel-info">
+          <div class="pnl-ttl" style="margin-bottom:11px" id="pt-info">画像情報</div>
+          <div id="info-body">
+            <div class="empty"><div class="e-ring"><div class="e-dot"></div></div><div class="e-ttl" id="noimg-lbl">画像なし</div><div class="e-sub" id="noimg-sub">画像を開くと情報が表示されます</div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div id="bot">
+      <button class="rst" id="bot-rst" onclick="resetAdj()">リセット</button>
+      <button class="exp-b" id="bot-exp" onclick="openExport()">書き出す</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXPORT MODAL -->
+<div class="ovl" id="exp-modal">
+  <div class="sheet">
+    <div class="modal-ttl" id="exp-ttl">書き出し設定</div>
+    <div class="fmt-grid">
+      <div class="fmt-opt on" onclick="pickFmt(this,'jpg')"><div class="fmt-nm">JPEG</div><div class="fmt-sub" id="fmt-jpg-sub">おすすめ・高画質</div></div>
+      <div class="fmt-opt" onclick="pickFmt(this,'png')"><div class="fmt-nm">PNG</div><div class="fmt-sub" id="fmt-png-sub">ロスレス</div></div>
+      <div class="fmt-opt" onclick="pickFmt(this,'webp')"><div class="fmt-nm">WEBP</div><div class="fmt-sub" id="fmt-webp-sub">ファイルが小さい</div></div>
+      <div class="fmt-opt" onclick="pickFmt(this,'transparent')"><div class="fmt-nm" id="fmt-transp-nm">PNG透過</div><div class="fmt-sub" id="fmt-transp-sub">背景透過</div></div>
+    </div>
+    <div class="modal-btns">
+      <button class="ghost" id="exp-cancel" style="flex:1" onclick="closeExport()">キャンセル</button>
+      <button class="solid" id="exp-dl" style="flex:2" onclick="doExport()">ダウンロード</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DIALOG -->
+<div id="confirm">
+  <div class="confirm-box">
+    <div class="confirm-ico">⚠️</div>
+    <div class="confirm-ttl" id="conf-ttl">編集内容が消えます</div>
+    <div class="confirm-sub" id="conf-sub">未保存の編集があります。<br>ホームに戻りますか？</div>
+    <div class="confirm-btns">
+      <button class="c-no" id="conf-no" onclick="closeConfirm()">キャンセル</button>
+      <button class="c-ok" id="conf-ok" onclick="confirmGoHome()">戻る</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="ovl" id="stg-modal">
+  <div class="sheet">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="modal-ttl" id="stg-ttl" style="margin-bottom:0">設定</div>
+      <button class="ghost" style="padding:3px 9px;font-size:10px" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="s-sec" id="stg-s-display">表示</div>
+    <div class="s-row">
+      <div><div class="s-lbl" id="stg-fs-lbl">文字の大きさ</div><div class="s-sub" id="stg-fs-sub">UIテキストのサイズ</div></div>
+      <div class="seg">
+        <button class="seg-b" id="fs-s" onclick="setFontSize('small')">S</button>
+        <button class="seg-b on" id="fs-m" onclick="setFontSize('medium')">M</button>
+        <button class="seg-b" id="fs-l" onclick="setFontSize('large')">L</button>
+      </div>
+    </div>
+    <div class="s-row">
+      <div><div class="s-lbl" id="stg-hist-lbl">ヒストグラム常時表示</div><div class="s-sub" id="stg-hist-sub">プレビュー下部に重ねて表示</div></div>
+      <label class="s-tog"><input type="checkbox" id="tog-hist" onchange="toggleHistOv(this.checked)"/><span class="s-tog-sl"></span></label>
+    </div>
+    <div class="s-row">
+      <div><div class="s-lbl" id="stg-zoom-lbl">ズーム倍率表示</div><div class="s-sub" id="stg-zoom-sub">プレビューにズーム%を表示</div></div>
+      <label class="s-tog"><input type="checkbox" id="tog-zoom" checked onchange="toggleZoom(this.checked)"/><span class="s-tog-sl"></span></label>
+    </div>
+    <div class="s-sec" id="stg-s-editor">エディタ</div>
+    <div class="s-row">
+      <div><div class="s-lbl" id="stg-dm-lbl">デフォルトモード</div><div class="s-sub" id="stg-dm-sub">起動時のモード</div></div>
+      <div class="seg">
+        <button class="seg-b" id="dm-easy" onclick="setDefaultMode('easy')">かんたん</button>
+        <button class="seg-b on" id="dm-pro" onclick="setDefaultMode('pro')">PRO</button>
+      </div>
+    </div>
+    <div class="s-row">
+      <div><div class="s-lbl" id="stg-save-lbl">設定を保存</div><div class="s-sub" id="stg-save-sub">リロード後も維持</div></div>
+      <label class="s-tog"><input type="checkbox" id="tog-save" checked onchange="toggleSaveStg(this.checked)"/><span class="s-tog-sl"></span></label>
+    </div>
+  </div>
+</div>
+
+<!-- HELP MODAL -->
+<div class="ovl" id="help-modal">
+  <div class="sheet">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <div class="modal-ttl" id="help-ttl" style="margin-bottom:0">使い方ガイド</div>
+      <button class="ghost" style="padding:3px 9px;font-size:10px" onclick="closeHelp()">✕</button>
+    </div>
+    <div id="help-content"></div>
+  </div>
+</div>
+
+<canvas id="offscreen" style="display:none"></canvas>
+
+<script>
+(()=>{
+'use strict';
+/* ═══════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════ */
+const $=id=>document.getElementById(id);
+function clamp(v){return v<0?0:v>255?255:v}
+function pct(v,mn,mx){return((v-mn)/(mx-mn))*100}
+function fmtV(v){return v>0?'+'+v:String(v)}
+
+/* ═══════════════════════════════════════════════
+   i18n
+═══════════════════════════════════════════════ */
+const TX={
+  ja:{
+    sub:'フォトエディター',open:'開く',export:'書き出す',begin:'タップして開始',
+    phTxt:'タップまたはドロップして\n写真を開く',
+    easy:'かんたん',pro:'PRO',lang:'EN',
+    tabLabels:{efilter:'フィルター',eadj:'調整',tone:'トーン',color:'カラー',detail:'詳細',xform:'変形',cut:'カット',mosaic:'モザイク',blur:'ぼかし',size:'サイズ',preset:'プリセット',info:'情報'},
+    rotL:'左回転',rotR:'右回転',flipH:'水平反転',flipV:'垂直反転',
+    filterStr:'フィルターの強さ',
+    filterCats:{cheki:'📷 チェキ・フィルム',white:'🤍 ホワイトドリーム',pink:'🌸 ピンク系',airy:'✨ エアリー・ナチュラル',other:'🎨 その他'},
+    easyLbls:{brightness:'明るさ',contrast:'コントラスト',saturation:'色の鮮やかさ',temperature:'色温度',fade:'ふんわり感',sharpness:'シャープ',vignette:'周辺暗め',grain:'フィルム感'},
+    easyDesc:{brightness:'写真を明るく・暗くします',contrast:'メリハリをつけます',saturation:'色を鮮やかに',temperature:'暖かい・冷たい雰囲気に',fade:'ふわっと淡い印象に',sharpness:'輪郭をくっきり',vignette:'周囲を暗くして中心を目立たせます',grain:'フィルム写真のような質感に'},
+    sl:{brightness:'明るさ',contrast:'コントラスト',exposure:'露出',highlights:'ハイライト',shadows:'シャドウ',blacks:'黒レベル',whites:'白レベル',saturation:'彩度',vibrance:'自然な彩度',hue:'色相シフト',temperature:'色温度',tint:'ティント',sharpness:'シャープ',blur:'ぼかし',clarity:'明瞭度',vignette:'周辺減光',lens:'周辺光量補正',chrAb:'色収差',noise:'ノイズ(輝度)',noiseC:'ノイズ(色)',grain:'フィルムグレイン',fade:'フェード',distortion:'歪み補正',angle:'微調整角度',perspH:'水平補正',perspV:'垂直補正',rr:'赤→赤',rg:'赤→緑',rb:'赤→青',gr:'緑→赤',gg:'緑→緑',gb:'緑→青',br:'青→赤',bg2:'青→緑',bb:'青→青',rawExp:'RAW露出',rawWB:'RAW色温度',rawTint:'RAWティント',rawSat:'RAW彩度',blurRadius:'ぼかし強度',warmShadows:'シャドウウォーム',coolHighlights:'ハイライトクール',dehaze:'かすみ除去'},
+    infoKeys:{file:'ファイル名',size:'サイズ',type:'形式',w:'元の幅',h:'元の高さ',mp:'MP',ar:'アスペクト比',outW:'出力幅',outH:'出力高さ'},
+    techTitle:'テクニカル詳細',adjTitle:'適用中の調整',noneAdj:'なし',
+    reset:'リセット',save:'保存',cancel:'キャンセル',download:'ダウンロード',apply:'適用',del:'✕',
+    builtin:'デフォルトフィルター',myPresets:'マイプリセット',noPresets:'プリセットなし',noPresetsSub:'調整して保存しましょう',
+    mosaicDesc:'モザイクのサイズを選択',clearMosaic:'モザイクを消す',
+    expTitle:'書き出し設定',
+    confirmTitle:'編集内容が消えます',confirmSub:'未保存の編集があります。\nホームに戻りますか？',confirmOk:'戻る',
+    settings:'設定',
+    helpTitle:'使い方ガイド',help:'❓ ヘルプ / 使い方',
+    helpSteps:[
+      {n:1,t:'写真を開く',d:'「開く」ボタンをタップするか、写真をドラッグ&ドロップ。JPEG・PNG・RAW・HEICなど対応。'},
+      {n:2,t:'フィルターを選ぶ',d:'フィルタータブからフィルターを選択。チェキ・ホワイトドリームなど豊富なスタイル。'},
+      {n:3,t:'明るさ・色を調整',d:'調整タブでスライダーを動かして明るさ・コントラスト・彩度を調整。'},
+      {n:4,t:'PRO機能を使う',d:'PROモードではトーンカーブ・HSLミキサー・変形・範囲ぼかしなど高度な調整が可能。'},
+      {n:5,t:'保存する',d:'「書き出す」ボタンを押してフォーマットを選択するとすぐダウンロード開始。'},
+    ],
+    blurDesc:'プレビュー上でドラッグして範囲を選択し、ぼかしを適用します。',
+    blurStart:'🎯 範囲選択を開始',blurClear:'ぼかしを消す',
+    blurTipLbl:'使い方',blurTipTxt:'「開始」を押して写真の上でドラッグ。円形の範囲がぼかされます。ダブルタップで終了。',
+    blurHint:'ドラッグして範囲をぼかす — ダブルタップで終了',
+    chekiTtl:'チェキ風に仕上げる',chekiSub:'インスタントフォト風',
+    chkSoft:'🌸 ソフト',chkWarm:'☀️ ウォーム',chkCool:'🧊 クール',
+    fmtJpg:'おすすめ・高画質',fmtPng:'ロスレス',fmtWebp:'ファイルが小さい',fmtTranspNm:'PNG透過',fmtTranspSub:'背景透過',
+    rp:{SNS:'SNS',HD:'HD',Print:'印刷',Square:'スクエア'},
+  },
+  en:{
+    sub:'PHOTO EDITOR',open:'OPEN',export:'EXPORT',begin:'TAP TO BEGIN',
+    phTxt:'Tap or drop\na photo',
+    easy:'EASY',pro:'PRO',lang:'日本語',
+    tabLabels:{efilter:'FILTER',eadj:'ADJUST',tone:'TONE',color:'COLOR',detail:'DETAIL',xform:'TRANSFORM',cut:'CROP',mosaic:'MOSAIC',blur:'BLUR',size:'SIZE',preset:'PRESET',info:'INFO'},
+    rotL:'Rotate L',rotR:'Rotate R',flipH:'Flip H',flipV:'Flip V',
+    filterStr:'Filter Intensity',
+    filterCats:{cheki:'📷 Cheki & Film',white:'🤍 White Dream',pink:'🌸 Pink',airy:'✨ Airy & Natural',other:'🎨 Other'},
+    easyLbls:{brightness:'Brightness',contrast:'Contrast',saturation:'Saturation',temperature:'Warmth',fade:'Fade',sharpness:'Sharpness',vignette:'Vignette',grain:'Film Grain'},
+    easyDesc:{brightness:'Brighter or darker',contrast:'Add punch',saturation:'Vivid or muted',temperature:'Warm or cool',fade:'Soft dreamy look',sharpness:'Crisper edges',vignette:'Darken edges',grain:'Film-like texture'},
+    sl:{brightness:'Brightness',contrast:'Contrast',exposure:'Exposure',highlights:'Highlights',shadows:'Shadows',blacks:'Blacks',whites:'Whites',saturation:'Saturation',vibrance:'Vibrance',hue:'Hue Shift',temperature:'Temperature',tint:'Tint',sharpness:'Sharpness',blur:'Blur',clarity:'Clarity',vignette:'Vignette',lens:'Lens Correction',chrAb:'Chromatic Ab.',noise:'Noise(Luma)',noiseC:'Noise(Chroma)',grain:'Film Grain',fade:'Fade',distortion:'Distortion',angle:'Fine Angle',perspH:'Perspective H',perspV:'Perspective V',rr:'Red→Red',rg:'Red→Green',rb:'Red→Blue',gr:'Green→Red',gg:'Green→Green',gb:'Green→Blue',br:'Blue→Red',bg2:'Blue→Green',bb:'Blue→Blue',rawExp:'RAW Exposure',rawWB:'RAW WB',rawTint:'RAW Tint',rawSat:'RAW Sat',blurRadius:'Blur Radius',warmShadows:'Warm Shadows',coolHighlights:'Cool Highlights',dehaze:'Dehaze'},
+    infoKeys:{file:'Filename',size:'Size',type:'Format',w:'Width',h:'Height',mp:'MP',ar:'Aspect Ratio',outW:'Out W',outH:'Out H'},
+    techTitle:'Technical',adjTitle:'Active Adjustments',noneAdj:'NONE',
+    reset:'RESET',save:'SAVE',cancel:'CANCEL',download:'DOWNLOAD',apply:'APPLY',del:'✕',
+    builtin:'Default Filters',myPresets:'My Presets',noPresets:'No Presets',noPresetsSub:'Adjust and save a look',
+    mosaicDesc:'Select mosaic size',clearMosaic:'Clear Mosaic',
+    expTitle:'Export Settings',
+    confirmTitle:'Unsaved Changes',confirmSub:'You have unsaved edits.\nGo back to home?',confirmOk:'Go Home',
+    settings:'Settings',
+    helpTitle:'How to Use',help:'❓ Help / How to Use',
+    helpSteps:[
+      {n:1,t:'Open a Photo',d:'Tap "OPEN" or drag & drop. Supports JPEG, PNG, HEIC, RAW and more.'},
+      {n:2,t:'Choose a Filter',d:'Pick from the FILTER tab. Cheki, White Dream, Airy and many more styles.'},
+      {n:3,t:'Adjust Brightness & Color',d:'Use sliders in the ADJUST tab for brightness, contrast, and saturation.'},
+      {n:4,t:'Use PRO Features',d:'PRO mode offers tone curves, HSL mixer, transform, and region blur tools.'},
+      {n:5,t:'Save Your Photo',d:'Press EXPORT and select a format to immediately download.'},
+    ],
+    blurDesc:'Drag on the preview to select a region and apply blur.',
+    blurStart:'🎯 Start Selection',blurClear:'Clear Blur',
+    blurTipLbl:'How to use',blurTipTxt:'Press "Start", then drag on the photo. A circular region will be blurred. Double-tap to finish.',
+    blurHint:'Drag to blur a region — Double-tap to finish',
+    chekiTtl:'Cheki-style Finish',chekiSub:'Soft instant photo effect',
+    chkSoft:'🌸 Soft',chkWarm:'☀️ Warm',chkCool:'🧊 Cool',
+    fmtJpg:'Recommended',fmtPng:'Lossless',fmtWebp:'Smaller file',fmtTranspNm:'PNG Transparent',fmtTranspSub:'Transparent BG',
+    rp:{SNS:'SNS',HD:'HD',Print:'Print',Square:'Square'},
+  }
+};
+let L='ja';
+function T(key,...p){let o=TX[L];for(const k of[key,...p]){if(o==null)return key;o=o[k]}return o??TX.en?.[key]??key}
+
+function applyLang(){
+  $('lang-btn').textContent=T('lang');
+  $('mb-easy').textContent=T('easy');
+  $('mb-pro').textContent=T('pro');
+  $('open-btn').textContent=T('open');
+  $('exp-hbtn').textContent=T('export');
+  $('hdr-sub').textContent=T('sub');
+  $('sp-sub').textContent=T('sub');
+  $('sp-cta').textContent=T('begin');
+  $('ph-txt').textContent=T('phTxt');
+  $('bot-rst').textContent=T('reset');
+  $('bot-exp').textContent=T('export');
+  $('conf-ttl').textContent=T('confirmTitle');
+  $('conf-sub').textContent=T('confirmSub');
+  $('conf-ok').textContent=T('confirmOk');
+  $('conf-no').textContent=T('cancel');
+  $('stg-ttl').textContent=T('settings');
+  $('help-ttl').textContent=T('helpTitle');
+  // Tabs
+  const tl=T('tabLabels');
+  Object.entries(tl).forEach(([k,v])=>{const e=$('tl-'+k);if(e)e.textContent=v});
+  // Rotate
+  $('rot-l').textContent=T('rotL');
+  $('rot-r').textContent=T('rotR');
+  $('flip-h').textContent=T('flipH');
+  $('flip-v').textContent=T('flipV');
+  // Panel titles
+  $('pt-efilter').textContent=L==='ja'?'フィルター & ルック':'Filter & Look';
+  $('pt-eadj').textContent=L==='ja'?'かんたん調整':'Easy Adjust';
+  $('pt-tone').textContent=L==='ja'?'トーン・露光':'Tone & Exposure';
+  $('pt-color').textContent=L==='ja'?'カラーグレーディング':'Color Grading';
+  $('pt-detail').textContent=L==='ja'?'ディテール・光学':'Detail & Optics';
+  $('pt-xform').textContent=L==='ja'?'回転・変形':'Transform';
+  $('pt-cut').textContent=L==='ja'?'カット・フレーム':'Crop & Frame';
+  $('pt-mosaic').textContent=L==='ja'?'モザイク':'Mosaic';
+  $('pt-blur').textContent=L==='ja'?'範囲ぼかし':'Region Blur';
+  $('pt-size').textContent=L==='ja'?'出力サイズ':'Output Size';
+  $('pt-preset').textContent=L==='ja'?'プリセット':'Presets';
+  $('pt-info').textContent=L==='ja'?'画像情報':'Image Info';
+  $('rst-easy').textContent=T('reset');$('rst-tone').textContent=T('reset');
+  $('ht-lbl').textContent=T('tabLabels','tone')||'Histogram';
+  $('ht-lbl').textContent=L==='ja'?'ヒストグラム':'Histogram';
+  $('cv-lbl').textContent=L==='ja'?'RGBカーブ':'RGB Curve';
+  $('hsl-sec-lbl').textContent=L==='ja'?'HSLミキサー':'HSL Mixer';
+  $('cmix-lbl').textContent=L==='ja'?'カラーミックス':'Color Mix';
+  $('cv-hint').textContent=L==='ja'?'ドラッグで移動 · タップで追加 · ダブルタップで削除':'Drag to move · Tap to add · Dbl-tap to remove';
+  $('mosaic-desc').textContent=T('mosaicDesc');
+  $('clear-mos').textContent=T('clearMosaic');
+  $('blur-desc').textContent=T('blurDesc');
+  $('blur-start-btn').textContent=T('blurStart');
+  $('blur-clear-btn').textContent=T('blurClear');
+  $('blur-tip-lbl').textContent=T('blurTipLbl');
+  $('blur-tip-txt').textContent=T('blurTipTxt');
+  $('blur-hint').textContent=T('blurHint');
+  $('sw-lbl').textContent=L==='ja'?'横幅 px':'Width px';
+  $('sh-lbl').textContent=L==='ja'?'縦幅 px':'Height px';
+  $('pi-open-btn').textContent=L==='ja'?'＋ 保存':'＋ Save';
+  $('pi-nm-lbl').textContent=L==='ja'?'プリセット名':'Preset Name';
+  $('pi-save-btn').textContent=T('save');$('pi-cancel-btn').textContent=T('cancel');
+  $('noimg-lbl').textContent=L==='ja'?'画像なし':'No Image';
+  $('noimg-sub').textContent=L==='ja'?'画像を開くと情報が表示されます':'Open an image to see info';
+  $('filt-str-lbl').textContent=T('filterStr');
+  $('help-btn').textContent=T('help');
+  $('cheki-ttl').textContent=T('chekiTtl');$('cheki-sub').textContent=T('chekiSub');
+  $('chk-soft').textContent=T('chkSoft');$('chk-warm').textContent=T('chkWarm');$('chk-cool').textContent=T('chkCool');
+  $('exp-ttl').textContent=T('expTitle');
+  $('exp-cancel').textContent=T('cancel');$('exp-dl').textContent=T('download');
+  $('fmt-jpg-sub').textContent=T('fmtJpg');$('fmt-png-sub').textContent=T('fmtPng');
+  $('fmt-webp-sub').textContent=T('fmtWebp');$('fmt-transp-nm').textContent=T('fmtTranspNm');$('fmt-transp-sub').textContent=T('fmtTranspSub');
+  $('cut-basic').textContent=L==='ja'?'基本':'Basic';
+  $('cr-sq').textContent=L==='ja'?'スクエア':'Square';$('cr-std').textContent=L==='ja'?'スタンダード':'Standard';
+  $('cr-wide').textContent=L==='ja'?'ワイド':'Wide';$('cr-port').textContent=L==='ja'?'ポートレート':'Portrait';
+  $('cr-story').textContent=L==='ja'?'ストーリー':'Story';$('cr-free').textContent=L==='ja'?'カスタム':'Custom';
+  // Settings
+  $('stg-s-display').textContent=L==='ja'?'表示':'Display';
+  $('stg-fs-lbl').textContent=L==='ja'?'文字の大きさ':'Font Size';
+  $('stg-fs-sub').textContent=L==='ja'?'UIテキストのサイズ':'UI text size';
+  $('stg-hist-lbl').textContent=L==='ja'?'ヒストグラム常時表示':'Always Show Histogram';
+  $('stg-hist-sub').textContent=L==='ja'?'プレビューに重ねて表示':'Overlay on preview';
+  $('stg-zoom-lbl').textContent=L==='ja'?'ズーム倍率表示':'Show Zoom';
+  $('stg-zoom-sub').textContent=L==='ja'?'プレビューにズーム%を表示':'Display zoom % on preview';
+  $('stg-s-editor').textContent=L==='ja'?'エディタ':'Editor';
+  $('stg-dm-lbl').textContent=L==='ja'?'デフォルトモード':'Default Mode';
+  $('stg-dm-sub').textContent=L==='ja'?'起動時のモード':'Mode when app opens';
+  $('stg-save-lbl').textContent=L==='ja'?'設定を保存':'Save Settings';
+  $('stg-save-sub').textContent=L==='ja'?'リロード後も維持':'Keep after reload';
+  $('fs-s').textContent=L==='ja'?'小':'S';$('fs-m').textContent=L==='ja'?'中':'M';$('fs-l').textContent=L==='ja'?'大':'L';
+  $('dm-easy').textContent=T('easy');$('dm-pro').textContent=T('pro');
+  buildAll();
+}
+function toggleLang(){L=L==='ja'?'en':'ja';applyLang()}
+
+/* ═══════════════════════════════════════════════
+   SETTINGS
+═══════════════════════════════════════════════ */
+let STG={fontSize:'medium',histOv:false,showZoom:true,defaultMode:'pro',save:true};
+function loadSTG(){try{const s=localStorage.getItem('lens_stg');if(s)STG={...STG,...JSON.parse(s)}}catch(e){}}
+function saveSTG(){if(STG.save)try{localStorage.setItem('lens_stg',JSON.stringify(STG))}catch(e){}}
+
+function syncSTGUI(){
+  ['s','m','l'].forEach((s,i)=>{const id=['fs-s','fs-m','fs-l'][i];$('fs-s').classList.toggle('on',STG.fontSize==='small');$('fs-m').classList.toggle('on',STG.fontSize==='medium');$('fs-l').classList.toggle('on',STG.fontSize==='large')});
+  $('tog-hist').checked=STG.histOv;
+  $('tog-zoom').checked=STG.showZoom;
+  $('dm-easy').classList.toggle('on',STG.defaultMode==='easy');
+  $('dm-pro').classList.toggle('on',STG.defaultMode==='pro');
+  $('tog-save').checked=STG.save;
+}
+function openSettings(){$('stg-modal').classList.add('op');syncSTGUI()}
+function closeSettings(){$('stg-modal').classList.remove('op')}
+function setFontSize(s){
+  STG.fontSize=s;
+  // Apply to the CSS variable — all elements using var(--fs) will update
+  const map={small:'11px',medium:'14px',large:'17px'};
+  document.documentElement.style.setProperty('--fs',map[s]);
+  syncSTGUI();saveSTG();
+}
+function toggleHistOv(v){STG.histOv=v;const e=$('ht-overlay');if(e)e.style.display=v?'block':'none';if(v&&srcImg)renderHistOv();saveSTG()}
+function toggleZoom(v){STG.showZoom=v;const e=$('zoom-badge');if(e)e.style.display=(v&&srcImg)?'block':'none';saveSTG()}
+function setDefaultMode(m){STG.defaultMode=m;syncSTGUI();saveSTG()}
+function toggleSaveStg(v){STG.save=v;if(!v)try{localStorage.removeItem('lens_stg')}catch(e){}else saveSTG();syncSTGUI()}
+function applySTG(){
+  const map={small:'11px',medium:'14px',large:'17px'};
+  document.documentElement.style.setProperty('--fs',map[STG.fontSize]||'14px');
+  if(!STG.showZoom)$('zoom-badge').style.display='none';
+  if(STG.histOv)$('ht-overlay').style.display='block';
+}
+
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
+const DEF={
+  brightness:0,contrast:0,exposure:0,highlights:0,shadows:0,blacks:0,whites:0,
+  saturation:0,vibrance:0,hue:0,temperature:0,tint:0,
+  sharpness:0,blur:0,clarity:0,vignette:0,lens:0,chrAb:0,noise:0,noiseC:0,grain:0,fade:0,distortion:0,
+  angle:0,perspH:0,perspV:0,
+  rr:0,rg:0,rb:0,gr:0,gg:0,gb:0,br:0,bg2:0,bb:0,
+  rawExp:0,rawWB:0,rawTint:0,rawSat:0,
+  blurRadius:30,warmShadows:0,coolHighlights:0,dehaze:0,
+};
+const HSL_COLS=['Red','Orange','Yellow','Green','Aqua','Blue','Purple','Magenta'];
+const HSL_DOTS=['#e02020','#f87020','#ddb800','#10a020','#00b8cc','#1060e0','#8820e0','#d010a0'];
+HSL_COLS.forEach(c=>{DEF['hH_'+c]=0;DEF['hS_'+c]=0;DEF['hL_'+c]=0});
+
+let adj={...DEF};
+let rotDeg=0,fH=false,fV=false;
+let rw=1080,rh=1080;
+let srcImg=null,imgMeta=null;
+let exportFmt='jpg';
+let mosaicSize=0;
+let filterIntensity=100,activeFilterId=null;
+let isDirty=false,curMode='pro',curPanel='tone';
+let htMode='rgb',cvCh='L';
+let isRawFile=false;
+let blurRegions=[];   // [{x,y,r,str}] in canvas-relative coords
+let blurSelActive=false;
+let myPresets=[];
+try{myPresets=JSON.parse(localStorage.getItem('lens_v9')||'[]')}catch(e){}
+
+const curves={
+  L:[[0,0],[.25,.25],[.5,.5],[.75,.75],[1,1]],
+  R:[[0,0],[.5,.5],[1,1]],G:[[0,0],[.5,.5],[1,1]],B:[[0,0],[.5,.5],[1,1]],
+};
+function buildCurveLUT(pts){
+  // Build a 256-entry LUT from curve control points using linear interpolation
+  const lut=new Uint8Array(256);
+  for(let i=0;i<256;i++){
+    const t=i/255;
+    // Find surrounding points
+    let lo=pts[0],hi=pts[pts.length-1];
+    for(let j=0;j<pts.length-1;j++){
+      if(pts[j][0]<=t&&pts[j+1][0]>=t){lo=pts[j];hi=pts[j+1];break;}
+    }
+    const span=hi[0]-lo[0];
+    const v=span<0.001?lo[1]:lo[1]+(hi[1]-lo[1])*((t-lo[0])/span);
+    lut[i]=Math.max(0,Math.min(255,Math.round(v*255)));
+  }
+  return lut;
+}
+function curvesActive(){
+  const isId=(c)=>c.every(([x,y],i,a)=>Math.abs(x-i/(a.length-1))<.01&&Math.abs(y-i/(a.length-1))<.01);
+  return!isId(curves.L)||!isId(curves.R)||!isId(curves.G)||!isId(curves.B);
+}
+
+/* ═══════════════════════════════════════════════
+   FILE SUPPORT
+═══════════════════════════════════════════════ */
+const RAW_EXTS=new Set(['raw','cr2','cr3','cr4','nef','nrw','arw','sr2','orf','rw2','pef','ptx','dng','heic','heif','avif','tiff','tif','bmp']);
+
+function getExt(name){return name.split('.').pop().toLowerCase()}
+function isSpecial(file){return RAW_EXTS.has(getExt(file.name))}
+
+/* ═══════════════════════════════════════════════
+   FILTERS
+═══════════════════════════════════════════════ */
+const FILTERS=[
+  {id:'f1', ic:'🌸',nm:'ふわピンク',nEn:'Fluffy Pink',cat:'pink',    adj:{brightness:8,contrast:-10,saturation:15,tint:20,temperature:15,fade:22,vignette:12,vibrance:10}},
+  {id:'f3', ic:'🤍',nm:'ホワイトドリーム',nEn:'White Dream',cat:'white',adj:{brightness:20,contrast:-15,saturation:-20,temperature:-15,fade:30,vignette:5,highlights:20}},
+  {id:'f3b',ic:'☁️',nm:'クラウドホワイト',nEn:'Cloud White',cat:'white',adj:{brightness:25,contrast:-20,saturation:-30,fade:40,vignette:3,highlights:25,whites:20}},
+  {id:'f3c',ic:'🕊️',nm:'ソフトミルク',nEn:'Soft Milk',cat:'white',   adj:{brightness:18,contrast:-22,saturation:-15,temperature:-8,fade:35,vignette:8,highlights:18,shadows:10}},
+  {id:'f3d',ic:'🫧',nm:'ピュアホワイト',nEn:'Pure White',cat:'white', adj:{brightness:28,contrast:-28,saturation:-40,fade:45,highlights:30,whites:25,shadows:15}},
+  {id:'f3e',ic:'🌁',nm:'ミストモーニング',nEn:'Mist Morning',cat:'white',adj:{brightness:15,contrast:-18,saturation:-10,temperature:-12,blur:2,fade:28,vignette:6,highlights:15}},
+  {id:'f8', ic:'🍑',nm:'桃色トワイライト',nEn:'Peach Twilight',cat:'pink',adj:{brightness:12,saturation:25,temperature:25,tint:18,fade:18,vignette:20,vibrance:20}},
+  {id:'f8b',ic:'🌹',nm:'ローズクォーツ',nEn:'Rose Quartz',cat:'pink', adj:{brightness:10,contrast:-8,saturation:20,temperature:20,tint:25,fade:25,vignette:15,vibrance:18}},
+  {id:'f8c',ic:'🎀',nm:'ベビーピンク',nEn:'Baby Pink',cat:'pink',     adj:{brightness:15,contrast:-15,saturation:10,temperature:18,tint:30,fade:32,vignette:10,vibrance:12,highlights:12}},
+  {id:'f8d',ic:'🌷',nm:'チューリップ',nEn:'Tulip',cat:'pink',         adj:{brightness:8,contrast:-5,saturation:30,temperature:22,tint:15,fade:15,vignette:18,vibrance:25}},
+  {id:'f8e',ic:'💗',nm:'ピンクドリーム',nEn:'Pink Dream',cat:'pink',  adj:{brightness:14,contrast:-12,saturation:18,temperature:15,tint:28,fade:30,vignette:12,vibrance:15,highlights:10}},
+  {id:'f8f',ic:'🍓',nm:'ストロベリー',nEn:'Strawberry',cat:'pink',    adj:{brightness:6,contrast:5,saturation:35,temperature:18,tint:10,vignette:22,vibrance:30}},
+  {id:'f4', ic:'✨',nm:'エアリー',nEn:'Airy',cat:'airy',              adj:{brightness:18,contrast:-18,saturation:-5,fade:35,vignette:8,shadows:15,highlights:10}},
+  {id:'f4b',ic:'🌤️',nm:'サニーエアー',nEn:'Sunny Air',cat:'airy',    adj:{brightness:20,contrast:-14,saturation:5,temperature:12,fade:28,vignette:6,shadows:12,highlights:15}},
+  {id:'f7', ic:'🌿',nm:'ナチュラルグリーン',nEn:'Natural Green',cat:'airy',adj:{brightness:5,saturation:20,temperature:-5,clarity:10,vibrance:15,hue:8}},
+  {id:'f5', ic:'🍊',nm:'ゴールデンアワー',nEn:'Golden Hour',cat:'other',adj:{brightness:8,contrast:10,saturation:20,temperature:35,tint:8,vignette:25,fade:10}},
+  {id:'f5b',ic:'🌅',nm:'サンセット',nEn:'Sunset',cat:'other',         adj:{brightness:5,contrast:15,saturation:25,temperature:40,tint:5,vignette:30,fade:8,vibrance:15}},
+  {id:'f2', ic:'💙',nm:'クールブルー',nEn:'Cool Blue',cat:'other',    adj:{brightness:5,contrast:5,saturation:5,temperature:-30,tint:-10,fade:15,vignette:18,vibrance:8}},
+  {id:'f2b',ic:'🧊',nm:'アイスブルー',nEn:'Ice Blue',cat:'other',    adj:{brightness:8,contrast:8,saturation:-10,temperature:-40,tint:-15,fade:20,vignette:22,vibrance:5}},
+  {id:'f9', ic:'☕',nm:'カフェフィルム',nEn:'Cafe Film',cat:'cheki',  adj:{brightness:-5,contrast:15,saturation:-10,temperature:20,grain:35,fade:20,vignette:35}},
+  {id:'f9b',ic:'📷',nm:'チェキ風',nEn:'Cheki',cat:'cheki',           adj:{brightness:15,contrast:-20,saturation:-5,temperature:8,grain:25,fade:38,vignette:15,highlights:18,shadows:8}},
+  {id:'f9c',ic:'🎞️',nm:'ヴィンテージ',nEn:'Vintage Film',cat:'cheki', adj:{brightness:-8,contrast:20,saturation:-15,temperature:25,grain:45,fade:25,vignette:40,hue:5}},
+  {id:'f6', ic:'🖤',nm:'モノクロ',nEn:'Monochrome',cat:'other',       adj:{saturation:-100,contrast:20,sharpness:20,vignette:30}},
+  {id:'f6b',ic:'⬜',nm:'ソフトモノ',nEn:'Soft Mono',cat:'other',     adj:{saturation:-100,contrast:5,brightness:12,fade:20,vignette:15}},
+  {id:'f10',ic:'🍽️',nm:'おいしそう',nEn:'Delicious',cat:'other',     adj:{brightness:10,contrast:18,saturation:30,temperature:18,vibrance:25,clarity:15,highlights:-10}},
+  {id:'f11',ic:'🌊',nm:'オーシャン',nEn:'Ocean',cat:'other',          adj:{brightness:8,saturation:22,temperature:-20,tint:-5,clarity:12,vibrance:20,vignette:15}},
+  {id:'f12',ic:'🌙',nm:'ナイトムード',nEn:'Night Mood',cat:'other',   adj:{brightness:-18,contrast:25,saturation:10,temperature:-10,vignette:45,clarity:8}},
+];
+
+function buildFilterGrid(){
+  const el=$('filter-grid');if(!el)return;
+  const cats=[
+    {label:T('filterCats','cheki'),ids:FILTERS.filter(f=>f.cat==='cheki').map(f=>f.id)},
+    {label:T('filterCats','white'),ids:FILTERS.filter(f=>f.cat==='white').map(f=>f.id)},
+    {label:T('filterCats','pink'), ids:FILTERS.filter(f=>f.cat==='pink').map(f=>f.id)},
+    {label:T('filterCats','airy'), ids:FILTERS.filter(f=>f.cat==='airy').map(f=>f.id)},
+    {label:T('filterCats','other'),ids:FILTERS.filter(f=>f.cat==='other').map(f=>f.id)},
+  ];
+  let html='';
+  cats.forEach(cat=>{
+    if(!cat.ids.length)return;
+    html+=`<div class="fg-cat">${cat.label}</div>`;
+    cat.ids.forEach(id=>{
+      const f=FILTERS.find(x=>x.id===id);if(!f)return;
+      const nm=L==='en'&&f.nEn?f.nEn:f.nm;
+      html+=`<div class="fc${activeFilterId===id?' on':''}" onclick="applyFilter('${id}')"><div class="fi">${f.ic}</div><div class="fn">${nm}</div></div>`;
+    });
+  });
+  el.innerHTML=html;
+  // Intensity slider
+  const ir=$('filt-intensity');if(!ir)return;
+  ir.innerHTML=buildESliderHTML('__fi__','',0,100,filterIntensity,'');
+  attachES(document.getElementById('ehit-__fi__'),'__fi__',0,100);
+}
+
+function applyFilter(id){
+  activeFilterId=id;
+  const f=FILTERS.find(x=>x.id===id);if(!f)return;
+  const t=filterIntensity/100;
+  adj={...DEF};
+  Object.entries(f.adj).forEach(([k,v])=>{if(k in adj)adj[k]=Math.round(v*t)});
+  isDirty=true;buildAllSliders();scheduleRender();buildFilterGrid();
+}
+
+/* ═══════════════════════════════════════════════
+   EASY CARDS
+═══════════════════════════════════════════════ */
+const EASY_DEFS=[
+  {key:'brightness',ico:'☀️',min:-100,max:100},
+  {key:'contrast',  ico:'◑', min:-100,max:100},
+  {key:'saturation',ico:'🎨',min:-100,max:100},
+  {key:'temperature',ico:'🌡️',min:-100,max:100},
+  {key:'fade',      ico:'🌫️',min:0,max:100},
+  {key:'sharpness', ico:'🔍',min:0,max:100},
+  {key:'vignette',  ico:'⭕',min:0,max:100},
+  {key:'grain',     ico:'🎞️',min:0,max:100},
+];
+
+function buildEasyCards(){
+  const el=$('easy-cards');if(!el)return;
+  el.innerHTML=EASY_DEFS.map(d=>`
+    <div class="ec">
+      <div class="ec-hd"><span class="ec-ico">${d.ico}</span><span class="ec-ttl">${T('easyLbls',d.key)}</span></div>
+      <div class="ec-sub">${T('easyDesc',d.key)}</div>
+      ${buildESliderHTML(d.key,d.key,d.min,d.max,adj[d.key]??0,T('easyLbls',d.key))}
+    </div>`).join('');
+  EASY_DEFS.forEach(d=>attachES(document.getElementById('ehit-'+d.key),d.key,d.min,d.max));
+}
+
+function buildESliderHTML(id,key,min,max,v,label){
+  const p=((v-min)/(max-min))*100;
+  const hasMid=min<0;
+  const fl=hasMid?(v>=0?'50%':p+'%'):'0%';
+  const fw=hasMid?(v>=0?(p-50)+'%':(50-p)+'%'):p+'%';
+  return`<div class="ec-val-row"><span></span><span class="ec-val${v!==0?' nz':''}" id="ev-${id}">${v>0?'+'+v:v}</span></div>
+<div class="es-hit" id="ehit-${id}" data-min="${min}" data-max="${max}">
+  <div class="es-bg">${hasMid?'<div class="es-mid"></div>':''}
+    <div class="es-fill" id="ef-${id}" style="left:${fl};width:${fw}"></div>
+    <div class="es-knob" id="ek-${id}" style="left:${p}%"></div>
+  </div>
+</div>`;
+}
+
+function attachES(hit,id,min,max){
+  if(!hit)return;
+  let active=false,startX=0,startV=0;
+  function calcV(dx){
+    const bg=hit.querySelector('.es-bg');if(!bg)return startV;
+    const w=bg.getBoundingClientRect().width;if(!w)return startV;
+    const delta=dx/w*(max-min);
+    return Math.round(Math.max(min,Math.min(max,startV+delta)));
+  }
+  function applyV(v){
+    const p=((v-min)/(max-min))*100;
+    const hasMid=min<0;
+    const fl=hasMid?(v>=0?'50%':p+'%'):'0%';
+    const fw=hasMid?(v>=0?(p-50)+'%':(50-p)+'%'):p+'%';
+    const ev=document.getElementById('ev-'+id);
+    const ef=document.getElementById('ef-'+id);
+    const ek=document.getElementById('ek-'+id);
+    if(ev){ev.textContent=v>0?'+'+v:String(v);ev.className='ec-val'+(v!==0?' nz':'');}
+    if(ef){ef.style.left=fl;ef.style.width=fw;}
+    if(ek)ek.style.left=p+'%';
+    if(id==='__fi__'){filterIntensity=v;if(activeFilterId)applyFilter(activeFilterId);}
+    else{adj[id]=v;isDirty=true;activeFilterId=null;updateProSlider(id,v,min,max);scheduleRender();}
+  }
+  hit.addEventListener('pointerdown',e=>{
+    active=true;startX=e.clientX;
+    startV=(id==='__fi__')?filterIntensity:(adj[id]??0);
+    hit.classList.add('drag');hit.setPointerCapture(e.pointerId);
+    applyV(calcV(0));e.preventDefault();
+  },{passive:false});
+  hit.addEventListener('pointermove',e=>{
+    if(!active)return;
+    applyV(calcV(e.clientX-startX));
+  },{passive:true});
+  const end=()=>{active=false;hit.classList.remove('drag')};
+  hit.addEventListener('pointerup',end);hit.addEventListener('pointercancel',end);
+}
+
+/* ═══════════════════════════════════════════════
+   PRO SLIDERS
+═══════════════════════════════════════════════ */
+const GROUPS={
+  tone:[['brightness',-100,100],['contrast',-100,100],['exposure',-100,100],['highlights',-100,100],['shadows',-100,100],['blacks',-100,100],['whites',-100,100]],
+  color:[['saturation',-100,100],['vibrance',-100,100],['hue',-180,180],['temperature',-100,100],['tint',-100,100],['warmShadows',-100,100],['coolHighlights',-100,100]],
+  detail:[['sharpness',0,100],['blur',0,30],['clarity',-100,100],['dehaze',-100,100],['vignette',0,100],['lens',-100,100],['chrAb',0,30],['noise',0,100],['noiseC',0,100],['grain',0,100],['fade',0,100],['distortion',-50,50]],
+  xform:[['angle',-45,45],['perspH',-50,50],['perspV',-50,50]],
+  adv:[['rr',-100,100],['rg',-100,100],['rb',-100,100],['gr',-100,100],['gg',-100,100],['gb',-100,100],['br',-100,100],['bg2',-100,100],['bb',-100,100]],
+  raw:[['rawExp',-100,100],['rawWB',-100,100],['rawTint',-100,100],['rawSat',-100,100]],
+  blurSec:[['blurRadius',5,80]],
+};
+
+function buildProSliderHTML(key,min,max){
+  const v=adj[key]??0;const p=pct(v,min,max);
+  const hasMid=min<0;
+  const fl=hasMid?(v>=0?'50%':p+'%'):'0%';
+  const fw=hasMid?(v>=0?(p-50)+'%':(50-p)+'%'):p+'%';
+  const lbl=T('sl',key)||key;
+  return`<div class="sl-row">
+  <div class="sl-top">
+    <span class="sl-lbl">${lbl}</span>
+    <span class="sl-val-wrap"><span class="sl-val${v!==0?' nz':''}" id="sv-${key}" onclick="openNI('${key}',${min},${max})">${fmtV(v)}</span><input class="sl-inp" id="si-${key}" type="number" min="${min}" max="${max}" onblur="closeNI('${key}',${min},${max})" onkeydown="niKey(event,'${key}',${min},${max})"/></span>
+  </div>
+  <div class="sl-hit" id="sh-${key}" data-min="${min}" data-max="${max}">
+    <div class="sl-track">${hasMid?'<div class="sl-mid"></div>':''}
+      <div class="sl-fill" id="sf-${key}" style="left:${fl};width:${fw}"></div>
+      <div class="sl-knob" id="sk-${key}" style="left:${p}%"></div>
+    </div>
+  </div>
+</div>`;
+}
+
+function buildGroup(defs,cid){
+  const el=$(cid);if(!el)return;
+  el.innerHTML=defs.map(([k,mn,mx])=>buildProSliderHTML(k,mn,mx)).join('');
+  defs.forEach(([k,mn,mx])=>attachPS(document.getElementById('sh-'+k),k,mn,mx));
+}
+
+function buildAllSliders(){
+  buildGroup(GROUPS.tone,'sl-tone');
+  buildGroup(GROUPS.color,'sl-color');
+  buildGroup(GROUPS.detail,'sl-detail');
+  buildGroup(GROUPS.xform,'sl-xform');
+  buildGroup(GROUPS.adv,'sl-adv');
+  buildGroup(GROUPS.blurSec,'sl-blur-strength');
+  // RAW section
+  if(isRawFile){
+    let rawEl=$('sl-raw');
+    if(!rawEl){
+      const detail=$('panel-detail');
+      if(detail){
+        const sec=document.createElement('div');sec.className='sec';sec.id='raw-sec';
+        sec.innerHTML=`<div class="sec-hd"><div class="sec-ttl"><div class="sec-bar" style="background:#ff4400"></div><span>RAW 現像設定</span></div></div><div class="sec-body"><div id="sl-raw"></div></div>`;
+        detail.insertBefore(sec,detail.firstChild.nextSibling);
+      }
+    }
+    if($('sl-raw'))buildGroup(GROUPS.raw,'sl-raw');
+  }
+  buildHSL();buildEasyCards();buildFilterGrid();
+}
+
+function attachPS(hit,key,min,max){
+  if(!hit)return;
+  let active=false,startX=0,startV=0;
+  function calcV(dx){
+    const track=hit.querySelector('.sl-track');if(!track)return startV;
+    const w=track.getBoundingClientRect().width;if(!w)return startV;
+    const delta=dx/w*(max-min);
+    return Math.round(Math.max(min,Math.min(max,startV+delta)));
+  }
+  function applyV(v){
+    adj[key]=v;isDirty=true;
+    updateProSlider(key,v,min,max);
+    scheduleRender();
+  }
+  hit.addEventListener('pointerdown',e=>{
+    active=true;startX=e.clientX;startV=adj[key]??0;
+    hit.classList.add('drag');hit.setPointerCapture(e.pointerId);
+    applyV(calcV(0));e.preventDefault();
+  },{passive:false});
+  hit.addEventListener('pointermove',e=>{
+    if(!active)return;
+    applyV(calcV(e.clientX-startX));
+  },{passive:true});
+  const end=()=>{active=false;hit.classList.remove('drag')};
+  hit.addEventListener('pointerup',end);hit.addEventListener('pointercancel',end);
+}
+
+function updateProSlider(key,v,min,max){
+  const p=pct(v,min,max);
+  const hasMid=min<0;
+  const fl=hasMid?(v>=0?'50%':p+'%'):'0%';
+  const fw=hasMid?(v>=0?(p-50)+'%':(50-p)+'%'):p+'%';
+  const sv=document.getElementById('sv-'+key);
+  const sf=document.getElementById('sf-'+key);
+  const sk=document.getElementById('sk-'+key);
+  if(sv){sv.textContent=fmtV(v);sv.className='sl-val'+(v!==0?' nz':'');}
+  if(sf){sf.style.left=fl;sf.style.width=fw;}
+  if(sk)sk.style.left=p+'%';
+}
+
+function openNI(key,min,max){
+  const si=document.getElementById('si-'+key);if(!si)return;
+  si.value=adj[key]??0;si.style.display='block';
+  requestAnimationFrame(()=>{si.focus();si.select()});
+}
+function closeNI(key,min,max){
+  const si=document.getElementById('si-'+key);if(!si)return;
+  let v=parseInt(si.value,10);if(isNaN(v))v=adj[key]??0;
+  v=Math.max(min,Math.min(max,v));
+  adj[key]=v;isDirty=true;
+  updateProSlider(key,v,min,max);scheduleRender();si.style.display='none';
+}
+function niKey(e,key,min,max){if(e.key==='Enter'||e.key==='Escape'){e.preventDefault();closeNI(key,min,max)}}
+
+/* HSL */
+function buildHSL(){
+  const el=$('hsl-panel');if(!el)return;
+  const subs=[['H',-50,50],['S',-100,100],['L',-100,100]];
+  el.innerHTML=HSL_COLS.map((c,i)=>`
+    <div class="hsl-cr">
+      <div class="hsl-hd"><div class="hsl-dot" style="background:${HSL_DOTS[i]}"></div><span class="hsl-nm">${c}</span></div>
+      ${subs.map(([s,mn,mx])=>{
+        const key='h'+s+'_'+c;const v=adj[key]??0;const p=pct(v,mn,mx);
+        const fl=v>=0?'50%':p+'%';const fw=v>=0?(p-50)+'%':(50-p)+'%';
+        return`<div class="hsl-sub">
+          <span class="hsl-sl">${s}</span>
+          <div class="sl-hit" id="sh-${key}" data-min="${mn}" data-max="${mx}">
+            <div class="sl-track"><div class="sl-mid"></div>
+              <div class="sl-fill" id="sf-${key}" style="left:${fl};width:${fw}"></div>
+              <div class="sl-knob" id="sk-${key}" style="left:${p}%"></div>
+            </div>
+          </div>
+          <span class="hsl-v${v!==0?' nz':''}" id="sv-${key}">${fmtV(v)}</span>
+        </div>`;
+      }).join('')}
+    </div>`).join('');
+  HSL_COLS.forEach(c=>subs.forEach(([s,mn,mx])=>{
+    const key='h'+s+'_'+c;
+    attachPS(document.getElementById('sh-'+key),key,mn,mx);
+  }));
+}
+
+function toggleSec(hd){hd.parentElement.classList.toggle('closed')}
+
+/* ═══════════════════════════════════════════════
+   RENDER ENGINE — complete rewrite for correctness
+═══════════════════════════════════════════════ */
+let rQueued=false,lastZoom=1;
+
+function scheduleRender(){
+  if(rQueued)return;
+  rQueued=true;
+  requestAnimationFrame(()=>{rQueued=false;if(srcImg)renderCanvas()});
+}
+
+function renderCanvas(){
+  if(!srcImg)return;
+  const area=$('preview-area');
+  const cv=$('prev-cv');
+  const AW=area.clientWidth,AH=area.clientHeight;
+  if(!AW||!AH)return;
+
+  const iw=srcImg.naturalWidth,ih=srcImg.naturalHeight;
+  const sc=Math.min(AW/iw,AH/ih);
+  const cw=Math.round(iw*sc),ch=Math.round(ih*sc);
+  lastZoom=sc;
+
+  if(cv.width!==cw||cv.height!==ch){cv.width=cw;cv.height=ch;}
+  cv.style.width=cw+'px';cv.style.height=ch+'px';
+
+  const ctx=cv.getContext('2d',{willReadFrequently:true});
+  ctx.clearRect(0,0,cw,ch);
+
+  /* Step 1: draw base with CSS filters (brightness/contrast/saturation/hue/blur) */
+  ctx.save();
+  ctx.translate(cw/2,ch/2);
+  const ang=(rotDeg+adj.angle)*Math.PI/180;
+  if(ang)ctx.rotate(ang);
+  if(fH)ctx.scale(-1,1);
+  if(fV)ctx.scale(1,-1);
+  // Perspective (simple skew approximation)
+  if(adj.perspH||adj.perspV){ctx.transform(1,adj.perspV/500,adj.perspH/500,1,0,0);}
+  const bri=Math.max(0,1+(adj.brightness+adj.rawExp*0.5)/100);
+  const con=Math.max(0.01,1+adj.contrast/100);
+  const sat=Math.max(0,1+(adj.saturation+adj.rawSat*0.5)/100);
+  const blurPx=adj.blur>0?(adj.blur*0.3).toFixed(2)+'px':'';
+  const hueRot=(adj.hue)!==0?`hue-rotate(${adj.hue}deg)`:'';
+  const filters=[
+    `brightness(${bri.toFixed(4)})`,
+    `contrast(${con.toFixed(4)})`,
+    `saturate(${sat.toFixed(4)})`,
+    blurPx?`blur(${blurPx})`:'',
+    hueRot,
+  ].filter(Boolean).join(' ');
+  ctx.filter=filters;
+  ctx.drawImage(srcImg,-cw/2,-ch/2,cw,ch);
+  ctx.restore();
+  ctx.filter='none';
+
+  /* Step 2: pixel-level operations */
+  const exposure=adj.exposure+(adj.rawExp||0);
+  const temperature=(adj.temperature||0)+(adj.rawWB||0);
+  const tint=(adj.tint||0)+(adj.rawTint||0);
+  const vibrance=(adj.vibrance||0)+(adj.rawSat||0)*0.5;
+
+  const hslActive=HSL_COLS.some(c=>adj['hH_'+c]||adj['hS_'+c]||adj['hL_'+c]);
+  const crvActive=curvesActive();
+  const needPx=exposure||temperature||tint||crvActive||
+               adj.highlights||adj.shadows||adj.blacks||adj.whites||
+               adj.grain||vibrance||adj.clarity||
+               adj.warmShadows||adj.coolHighlights||adj.dehaze||
+               adj.noise||adj.noiseC||adj.chrAb||hslActive||
+               adj.rr||adj.rg||adj.rb||adj.gr||adj.gg||adj.gb||adj.br||adj.bg2||adj.bb;
+
+  if(needPx){
+    const lutL=crvActive?buildCurveLUT(curves.L):null;
+    const lutR=crvActive?buildCurveLUT(curves.R):null;
+    const lutG=crvActive?buildCurveLUT(curves.G):null;
+    const lutB=crvActive?buildCurveLUT(curves.B):null;
+    const id=ctx.getImageData(0,0,cw,ch);
+    const d=id.data,n=d.length;
+    const expMul=exposure?Math.pow(2,exposure/100):1;
+    const hiB=adj.highlights/300;
+    const shB=adj.shadows/300;
+    const blkB=adj.blacks/200;
+    const whtB=adj.whites/200;
+    const tmpAmt=temperature;
+    const tintAmt=tint;
+    const vibAmt=vibrance;
+    const clarV=(adj.clarity||0)/200;
+    const wshB=(adj.warmShadows||0)/300;
+    const chlB=(adj.coolHighlights||0)/300;
+    const dehV=(adj.dehaze||0)/100;
+
+    for(let i=0;i<n;i+=4){
+      let r=d[i],g=d[i+1],b=d[i+2];
+
+      // Exposure
+      if(expMul!==1){r=r*expMul;g=g*expMul;b=b*expMul;}
+      // Temperature — warm=+R-B, cool=-R+B
+      if(tmpAmt>0){r+=tmpAmt*0.5;b-=tmpAmt*0.25;}
+      else if(tmpAmt<0){b+=(-tmpAmt)*0.5;r-=(-tmpAmt)*0.25;}
+      // Tint — +green / +magenta
+      if(tintAmt>0)g+=tintAmt*0.35;
+      else if(tintAmt<0){r+=(-tintAmt)*0.25;b+=(-tintAmt)*0.25;}
+
+      const lum=(0.299*r+0.587*g+0.114*b)/255;
+
+      // Highlights
+      if(adj.highlights&&lum>0.5){const s2=((lum-0.5)/0.5)*hiB;r+=r*s2;g+=g*s2;b+=b*s2;}
+      // Shadows
+      if(adj.shadows&&lum<0.5){const s2=((0.5-lum)/0.5)*shB;r+=r*s2;g+=g*s2;b+=b*s2;}
+      // Whites
+      if(adj.whites&&lum>0.75){const s2=((lum-0.75)/0.25)*whtB;r+=r*s2;g+=g*s2;b+=b*s2;}
+      // Blacks
+      if(adj.blacks&&lum<0.25){const s2=((0.25-lum)/0.25)*blkB;r-=r*s2;g-=g*s2;b-=b*s2;}
+
+      // Vibrance (smart saturation)
+      if(vibAmt){
+        const mx=Math.max(r,g,b);const mn2=Math.min(r,g,b);
+        const curSat=mx>0?(mx-mn2)/mx:0;
+        const boost=(vibAmt/100)*(1-curSat)*0.6;
+        const avg=(r+g+b)/3;
+        r+=(r-avg)*boost;g+=(g-avg)*boost;b+=(b-avg)*boost;
+      }
+      // Clarity
+      if(clarV&&lum>0.05&&lum<0.95){
+        const avg2=(r+g+b)/3/255;const diff=(avg2-lum)*clarV;
+        r+=diff*r;g+=diff*g;b+=diff*b;
+      }
+      // Warm shadows
+      if(wshB&&lum<0.5){const s2=((0.5-lum)/0.5)*wshB;r+=s2*30;b-=s2*15;}
+      // Cool highlights
+      if(chlB&&lum>0.5){const s2=((lum-0.5)/0.5)*chlB;b+=s2*25;r-=s2*12;}
+      // Dehaze
+      if(dehV){const h=dehV*0.15;r-=h*255*(1-lum);g-=h*255*(1-lum);b-=h*255*(1-lum);}
+      // Film grain
+      if(adj.grain){const n2=(Math.random()-.5)*adj.grain*0.7;r+=n2;g+=n2;b+=n2;}
+      // Luminance noise
+      if(adj.noise){const nAmt=(Math.random()-.5)*adj.noise*1.2;r+=nAmt;g+=nAmt;b+=nAmt;}
+      // Chroma noise
+      if(adj.noiseC){r+=(Math.random()-.5)*adj.noiseC*1.0;g+=(Math.random()-.5)*adj.noiseC*1.0;b+=(Math.random()-.5)*adj.noiseC*1.0;}
+      // Chromatic aberration (simple: shift red/blue channels)
+      if(adj.chrAb){const ca=adj.chrAb*0.3;r+=ca*(lum-.5);b-=ca*(lum-.5);}
+      // Color mixer
+      if(adj.rr||adj.rg||adj.rb||adj.gr||adj.gg||adj.gb||adj.br||adj.bg2||adj.bb){
+        const nr=r+(adj.rr/100)*r+(adj.rg/100)*g+(adj.rb/100)*b;
+        const ng=g+(adj.gr/100)*r+(adj.gg/100)*g+(adj.gb/100)*b;
+        const nb=b+(adj.br/100)*r+(adj.bg2/100)*g+(adj.bb/100)*b;
+        r=nr;g=ng;b=nb;
+      }
+      // Apply RGB curves
+      if(crvActive){
+        const ri=Math.max(0,Math.min(255,Math.round(r)));
+        const gi=Math.max(0,Math.min(255,Math.round(g)));
+        const bi=Math.max(0,Math.min(255,Math.round(b)));
+        r=lutL[lutR[ri]];g=lutL[lutG[gi]];b=lutL[lutB[bi]];
+      }
+      // HSL per-channel mixer
+      {
+        const rn=r/255,gn=g/255,bn=b/255;
+        const mx=Math.max(rn,gn,bn),mn=Math.min(rn,gn,bn),d2=mx-mn;
+        if(d2>0.01){
+          let h6;
+          if(mx===rn)h6=((gn-bn)/d2+6)%6;
+          else if(mx===gn)h6=(bn-rn)/d2+2;
+          else h6=(rn-gn)/d2+4;
+          const h=h6/6; // 0-1
+          // Weights: Red=0, Orange=1/8, Yellow=2/8, Green=3/8, Aqua=4/8, Blue=5/8, Purple=6/8, Magenta=7/8
+          const hCols=['Red','Orange','Yellow','Green','Aqua','Blue','Purple','Magenta'];
+          const hCenters=[0,1/8,2/8,3/8,4/8,5/8,6/8,7/8];
+          let maxW=0,bestCol='';
+          for(let ci=0;ci<8;ci++){
+            let diff=Math.abs(h-hCenters[ci]);if(diff>0.5)diff=1-diff;
+            const w=Math.max(0,1-diff*8);
+            if(w>maxW){maxW=w;bestCol=hCols[ci];}
+          }
+          if(maxW>0.05){
+            const hShift=adj['hH_'+bestCol]||0;
+            const sShift=adj['hS_'+bestCol]||0;
+            const lShift=adj['hL_'+bestCol]||0;
+            if(hShift||sShift||lShift){
+              // Convert to HSL, adjust, back to RGB
+              const l=(mx+mn)/2;
+              const s2=d2/(1-Math.abs(2*l-1));
+              const newH=((h6/6)+(hShift/360)+1)%1;
+              const newS=Math.max(0,Math.min(1,s2*(1+sShift/100)));
+              const newL=Math.max(0,Math.min(1,l+lShift/200));
+              // HSL to RGB
+              const c2=newS*(1-Math.abs(2*newL-1));
+              const x2=c2*(1-Math.abs((newH*6)%2-1));
+              const m2=newL-c2/2;
+              let r2=0,g2=0,b2=0;
+              const h2=newH*6;
+              if(h2<1){r2=c2;g2=x2;}else if(h2<2){r2=x2;g2=c2;}else if(h2<3){g2=c2;b2=x2;}
+              else if(h2<4){g2=x2;b2=c2;}else if(h2<5){r2=x2;b2=c2;}else{r2=c2;b2=x2;}
+              r=((r2+m2)*maxW+(rn*(1-maxW)))*255;
+              g=((g2+m2)*maxW+(gn*(1-maxW)))*255;
+              b=((b2+m2)*maxW+(bn*(1-maxW)))*255;
+            }
+          }
+        }
+      }
+
+      d[i]=clamp(r);d[i+1]=clamp(g);d[i+2]=clamp(b);
+    }
+    ctx.putImageData(id,0,0);
+  }
+
+  /* Sharpness (unsharp mask) */
+  if(adj.sharpness>0){
+    const amt=adj.sharpness/100*1.5;
+    const tmp=document.createElement('canvas');tmp.width=cw;tmp.height=ch;
+    const tc=tmp.getContext('2d');
+    tc.filter=`blur(1px)`;tc.drawImage(cv,0,0);
+    const src2=ctx.getImageData(0,0,cw,ch);
+    const blr=tc.getImageData(0,0,cw,ch);
+    const sd=src2.data,bd=blr.data;
+    for(let i=0;i<sd.length;i+=4){
+      sd[i]=clamp(sd[i]+(sd[i]-bd[i])*amt);
+      sd[i+1]=clamp(sd[i+1]+(sd[i+1]-bd[i+1])*amt);
+      sd[i+2]=clamp(sd[i+2]+(sd[i+2]-bd[i+2])*amt);
+    }
+    ctx.putImageData(src2,0,0);
+  }
+
+  /* Step 3: mosaic */
+  if(mosaicSize>0){
+    const ms=Math.max(2,Math.round(mosaicSize*sc/6));
+    const src=ctx.getImageData(0,0,cw,ch);
+    const tmp=new ImageData(cw,ch);
+    const sd=src.data,td=tmp.data;
+    for(let y=0;y<ch;y+=ms){for(let x=0;x<cw;x+=ms){
+      const bi=(y*cw+x)*4;
+      const pr=sd[bi],pg=sd[bi+1],pb2=sd[bi+2];
+      for(let dy=0;dy<ms&&y+dy<ch;dy++)for(let dx=0;dx<ms&&x+dx<cw;dx++){
+        const ti=((y+dy)*cw+(x+dx))*4;
+        td[ti]=pr;td[ti+1]=pg;td[ti+2]=pb2;td[ti+3]=255;
+      }
+    }}
+    ctx.putImageData(tmp,0,0);
+  }
+
+  /* Step 4: region blur */
+  if(blurRegions.length){
+    blurRegions.forEach(({x,y,r:rad,str})=>{
+      const x0=Math.max(0,Math.round(x-rad)),y0=Math.max(0,Math.round(y-rad));
+      const x1=Math.min(cw,Math.round(x+rad)),y1=Math.min(ch,Math.round(y+rad));
+      if(x1<=x0||y1<=y0)return;
+      const w2=x1-x0,h2=y1-y0;
+      const piece=ctx.getImageData(x0,y0,w2,h2);
+      const blurred=boxBlurID(piece,Math.max(1,Math.round(str*0.2)));
+      // feather mask
+      const bd=blurred.data;const od=piece.data;
+      for(let py=0;py<h2;py++)for(let px=0;px<w2;px++){
+        const dist=Math.hypot(px+x0-x,py+y0-y);
+        let alpha=Math.max(0,Math.min(1,1-(dist/rad)));
+        alpha=alpha*alpha;// smooth falloff
+        const i=(py*w2+px)*4;
+        od[i]  =od[i]  *(1-alpha)+bd[i]  *alpha;
+        od[i+1]=od[i+1]*(1-alpha)+bd[i+1]*alpha;
+        od[i+2]=od[i+2]*(1-alpha)+bd[i+2]*alpha;
+      }
+      ctx.putImageData(piece,x0,y0);
+    });
+  }
+
+  /* Step 5: overlay effects */
+  if(adj.vignette>0){
+    const vg=ctx.createRadialGradient(cw/2,ch/2,0,cw/2,ch/2,Math.hypot(cw,ch)*0.55);
+    vg.addColorStop(Math.max(0,1-adj.vignette/100*0.65),'rgba(0,0,0,0)');
+    vg.addColorStop(1,`rgba(0,0,0,${(adj.vignette/100*0.88).toFixed(3)})`);
+    ctx.fillStyle=vg;ctx.fillRect(0,0,cw,ch);
+  }
+  if(adj.fade>0){
+    ctx.fillStyle=`rgba(255,255,255,${(adj.fade/100*0.4).toFixed(3)})`;
+    ctx.fillRect(0,0,cw,ch);
+  }
+
+  /* UI updates */
+  const ef=$('exp-fill');if(ef)ef.style.width=(50+(adj.exposure||0)/2)+'%';
+  if(STG.showZoom){const zb=$('zoom-badge');if(zb){zb.style.display='block';zb.textContent=Math.round(sc*100)+'%';}}
+
+  /* Histogram updates (deferred, non-blocking) */
+  requestAnimationFrame(()=>{
+    if($('panel-tone').classList.contains('on'))drawHistogram();
+    if(STG.histOv)renderHistOv();
+  });
+}
+
+function boxBlurID(imageData,r){
+  const d=new Uint8ClampedArray(imageData.data);
+  const W=imageData.width,H=imageData.height;
+  const out=new Uint8ClampedArray(d.length);
+  for(let y=0;y<H;y++){
+    for(let x=0;x<W;x++){
+      let sr=0,sg=0,sb=0,cnt=0;
+      for(let dy=-r;dy<=r;dy++){for(let dx=-r;dx<=r;dx++){
+        const nx=x+dx,ny=y+dy;
+        if(nx>=0&&nx<W&&ny>=0&&ny<H){
+          const i=(ny*W+nx)*4;sr+=d[i];sg+=d[i+1];sb+=d[i+2];cnt++;
+        }
+      }}
+      const i=(y*W+x)*4;out[i]=sr/cnt;out[i+1]=sg/cnt;out[i+2]=sb/cnt;out[i+3]=d[i+3];
+    }
+  }
+  return new ImageData(out,W,H);
+}
+
+/* ═══════════════════════════════════════════════
+   HISTOGRAM
+═══════════════════════════════════════════════ */
+function setHtMode(btn,mode){
+  htMode=mode;
+  document.querySelectorAll('.ht-tab').forEach(b=>b.classList.toggle('on',b===btn));
+  drawHistogram();
+}
+
+function getPixelData(){
+  const pv=$('prev-cv');
+  if(!pv||pv.style.display==='none')return null;
+  try{return pv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,pv.width,pv.height)}
+  catch(e){return null}
+}
+
+function drawHistogram(){
+  const hc=$('ht-canvas');if(!hc)return;
+  const id=getPixelData();if(!id)return;
+  const dpr=window.devicePixelRatio||1;
+  const rect=hc.getBoundingClientRect();
+  if(!rect.width)return;
+  const W=Math.round(rect.width*dpr),H=Math.round(rect.height*dpr)||120;
+  if(hc.width!==W||hc.height!==H){hc.width=W;hc.height=H}
+  const ctx=hc.getContext('2d');
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#0d0d0d';ctx.fillRect(0,0,W,H);
+  const d=id.data;const bw=Math.ceil(W/256)+1;
+  if(htMode==='rgb'){
+    const rH=new Int32Array(256),gH=new Int32Array(256),bH=new Int32Array(256);
+    for(let i=0;i<d.length;i+=4){rH[d[i]]++;gH[d[i+1]]++;bH[d[i+2]]++;}
+    let mx=0;
+    for(let i=0;i<256;i++){if(rH[i]>mx)mx=rH[i];if(gH[i]>mx)mx=gH[i];if(bH[i]>mx)mx=bH[i];}
+    if(!mx)return;
+    [[rH,'rgba(200,60,60,.75)'],[gH,'rgba(60,185,80,.75)'],[bH,'rgba(60,120,220,.75)']].forEach(([h,col])=>{
+      ctx.fillStyle=col;
+      for(let i=0;i<256;i++){const bh=Math.round((h[i]/mx)*(H-2));ctx.fillRect(Math.round(i/256*W),H-bh,bw,bh);}
+    });
+  }else{
+    const lH=new Int32Array(256);
+    for(let i=0;i<d.length;i+=4)lH[Math.round(.299*d[i]+.587*d[i+1]+.114*d[i+2])]++;
+    let mx=0;for(let i=0;i<256;i++)if(lH[i]>mx)mx=lH[i];
+    if(!mx)return;
+    ctx.fillStyle='rgba(200,200,200,.8)';
+    for(let i=0;i<256;i++){const bh=Math.round((lH[i]/mx)*(H-2));ctx.fillRect(Math.round(i/256*W),H-bh,bw,bh);}
+  }
+}
+
+function renderHistOv(){
+  const hca=$('ht-ov-cv');if(!hca)return;
+  const id=getPixelData();if(!id)return;
+  const W=$('preview-area').clientWidth||300,H=56;
+  hca.width=W;hca.height=H;
+  const ctx=hca.getContext('2d');
+  const d=id.data;const bw=Math.ceil(W/256)+1;
+  const rH=new Int32Array(256),gH=new Int32Array(256),bH=new Int32Array(256);
+  for(let i=0;i<d.length;i+=4){rH[d[i]]++;gH[d[i+1]]++;bH[d[i+2]]++;}
+  let mx=0;for(let i=0;i<256;i++){if(rH[i]>mx)mx=rH[i];if(gH[i]>mx)mx=gH[i];if(bH[i]>mx)mx=bH[i];}
+  if(!mx)return;
+  [[rH,'rgba(200,60,60,.6)'],[gH,'rgba(60,185,80,.6)'],[bH,'rgba(60,120,220,.6)']].forEach(([h,col])=>{
+    ctx.fillStyle=col;
+    for(let i=0;i<256;i++){const bh=Math.round((h[i]/mx)*(H-1));ctx.fillRect(Math.round(i/256*W),H-bh,bw,bh);}
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   RGB CURVE
+═══════════════════════════════════════════════ */
+function setCvCh(btn,ch){
+  cvCh=ch;
+  document.querySelectorAll('.cv-tab').forEach(b=>b.classList.toggle('on',b===btn));
+  drawCurve();
+}
+function drawCurve(){
+  const cv=$('cv-canvas');if(!cv)return;
+  const dpr=window.devicePixelRatio||1;
+  const rect=cv.getBoundingClientRect();if(!rect.width)return;
+  const W=Math.round(rect.width*dpr),H=Math.round(rect.height*dpr)||240;
+  if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H}
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#0d0d0d';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='#1c1c1c';ctx.lineWidth=dpr;
+  for(let i=1;i<4;i++){
+    ctx.beginPath();ctx.moveTo(W*i/4,0);ctx.lineTo(W*i/4,H);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,H*i/4);ctx.lineTo(W,H*i/4);ctx.stroke();
+  }
+  ctx.strokeStyle='#242424';ctx.lineWidth=dpr;
+  ctx.beginPath();ctx.moveTo(0,H);ctx.lineTo(W,0);ctx.stroke();
+  const pts=curves[cvCh];
+  const col={L:'#c8c8c8',R:'#cc3333',G:'#33aa44',B:'#3366cc'}[cvCh];
+  ctx.strokeStyle=col;ctx.lineWidth=2.5*dpr;
+  ctx.beginPath();
+  pts.forEach(([x,y],i)=>{i===0?ctx.moveTo(x*W,(1-y)*H):ctx.lineTo(x*W,(1-y)*H)});
+  ctx.stroke();
+  pts.forEach(([x,y])=>{
+    ctx.fillStyle=col;ctx.beginPath();ctx.arc(x*W,(1-y)*H,5*dpr,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#000';ctx.lineWidth=1.5*dpr;ctx.stroke();
+  });
+}
+(()=>{
+  const cv=$('cv-canvas');if(!cv)return;
+  let drag=null;
+  function toNorm(e){
+    const r=cv.getBoundingClientRect();
+    const cx=e.clientX??e.touches?.[0].clientX;
+    const cy=e.clientY??e.touches?.[0].clientY;
+    return[Math.max(0,Math.min(1,(cx-r.left)/r.width)),Math.max(0,Math.min(1,1-(cy-r.top)/r.height))];
+  }
+  function nearest([x,y]){
+    let bi=null,bd=Infinity;
+    curves[cvCh].forEach(([px,py],i)=>{const d=Math.hypot(px-x,py-y);if(d<bd){bd=d;bi=i}});
+    return bd<0.09?bi:null;
+  }
+  cv.addEventListener('pointerdown',e=>{
+    cv.setPointerCapture(e.pointerId);
+    const nm=toNorm(e);let idx=nearest(nm);
+    if(idx===null){
+      curves[cvCh].push([...nm]);
+      curves[cvCh].sort((a,b2)=>a[0]-b2[0]);
+      idx=curves[cvCh].findIndex(([x,y])=>Math.abs(x-nm[0])<.001&&Math.abs(y-nm[1])<.001);
+    }
+    drag=idx;drawCurve();isDirty=true;e.preventDefault();
+  },{passive:false});
+  cv.addEventListener('pointermove',e=>{
+    if(drag===null)return;
+    const nm=toNorm(e);
+    curves[cvCh][drag]=[...nm];
+    curves[cvCh].sort((a,b2)=>a[0]-b2[0]);
+    drag=curves[cvCh].findIndex(([x,y])=>Math.abs(x-nm[0])<.001&&Math.abs(y-nm[1])<.001);
+    drawCurve();isDirty=true;scheduleRender();
+  },{passive:true});
+  cv.addEventListener('pointerup',()=>{drag=null});
+  cv.addEventListener('dblclick',e=>{
+    const idx=nearest(toNorm(e));
+    if(idx!==null&&curves[cvCh].length>2){curves[cvCh].splice(idx,1);drawCurve();isDirty=true;scheduleRender();}
+  });
+})();
+
+/* ═══════════════════════════════════════════════
+   REGION BLUR TOOL
+═══════════════════════════════════════════════ */
+function startBlurSel(){
+  if(!srcImg)return;
+  blurSelActive=true;
+  const ovl=$('blur-sel');
+  const cv=$('prev-cv');
+  ovl.style.display='block';
+  const selCv=$('blur-sel-cv');
+  selCv.width=cv.width;selCv.height=cv.height;
+  selCv.style.width=cv.style.width;selCv.style.height=cv.style.height;
+  const ctx=selCv.getContext('2d');
+  ctx.clearRect(0,0,selCv.width,selCv.height);
+
+  let dragging=false,sx=0,sy=0;
+  function getPos(e){
+    const r=selCv.getBoundingClientRect();
+    const scaleX=selCv.width/r.width,scaleY=selCv.height/r.height;
+    const cx=e.clientX??e.touches?.[0].clientX;
+    const cy=e.clientY??e.touches?.[0].clientY;
+    return{x:(cx-r.left)*scaleX,y:(cy-r.top)*scaleY};
+  }
+  selCv.onpointerdown=e=>{
+    dragging=true;const p=getPos(e);sx=p.x;sy=p.y;
+    selCv.setPointerCapture(e.pointerId);e.preventDefault();
+  };
+  selCv.onpointermove=e=>{
+    if(!dragging)return;
+    const p=getPos(e);
+    const r=Math.hypot(p.x-sx,p.y-sy);
+    ctx.clearRect(0,0,selCv.width,selCv.height);
+    ctx.strokeStyle='rgba(200,0,10,.85)';ctx.lineWidth=2;
+    ctx.setLineDash([6,3]);
+    ctx.beginPath();ctx.arc(sx,sy,r,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle='rgba(200,0,10,.08)';ctx.fill();
+  };
+  selCv.onpointerup=e=>{
+    if(!dragging)return;dragging=false;
+    const p=getPos(e);
+    const r=Math.hypot(p.x-sx,p.y-sy);
+    if(r>5){
+      blurRegions.push({x:sx,y:sy,r,str:adj.blurRadius||30});
+      isDirty=true;scheduleRender();
+    }
+    ctx.clearRect(0,0,selCv.width,selCv.height);
+  };
+  selCv.ondblclick=()=>stopBlurSel();
+}
+function stopBlurSel(){
+  blurSelActive=false;
+  const ovl=$('blur-sel');ovl.style.display='none';
+  const selCv=$('blur-sel-cv');
+  selCv.onpointerdown=null;selCv.onpointermove=null;selCv.onpointerup=null;selCv.ondblclick=null;
+}
+function clearBlurRegions(){blurRegions=[];isDirty=true;scheduleRender()}
+
+/* ═══════════════════════════════════════════════
+   IMAGE LOAD
+═══════════════════════════════════════════════ */
+function onPreviewClick(){if(!srcImg)triggerOpen()}
+function triggerOpen(){$('fi').click()}
+function onFI(e){const f=e.target.files[0];if(f)loadFile(f);e.target.value=''}
+
+function loadFile(f){
+  if(!f)return;
+  const url=URL.createObjectURL(f);
+  const ext=getExt(f.name);
+  isRawFile=isSpecial(f);
+  const img=new Image();
+  img.onload=()=>{
+    srcImg=img;isDirty=false;
+    // Badge
+    const badge=$('raw-badge');
+    if(badge){
+      const showBadge=['raw','cr2','cr3','nef','arw','orf','rw2','dng','heic','heif','avif','tiff','tif'].includes(ext);
+      badge.style.display=showBadge?'inline-block':'none';
+      badge.textContent=ext.toUpperCase();
+    }
+    const ph=$('ph');
+    ph.style.transition='opacity .25s';ph.style.opacity='0';
+    setTimeout(()=>{ph.style.display='none'},250);
+    $('prev-cv').style.display='block';
+    $('preview-area').classList.add('has-img');
+    $('bot').style.display='flex';
+    $('exp-hbtn').style.display='';
+    $('checker').style.display='block';
+    imgMeta={name:f.name,size:(f.size/1024).toFixed(1)+' KB',type:f.type||ext.toUpperCase(),w:img.naturalWidth,h:img.naturalHeight,mp:((img.naturalWidth*img.naturalHeight)/1e6).toFixed(2),ar:(img.naturalWidth/img.naturalHeight).toFixed(3),totalPx:(img.naturalWidth*img.naturalHeight).toLocaleString()};
+    rw=img.naturalWidth;rh=img.naturalHeight;
+    $('rw').value=rw;$('rh').value=rh;
+    if(isRawFile&&curMode==='pro')buildAllSliders();
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{scheduleRender();buildInfo();buildRes()}));
+  };
+  img.onerror=()=>{URL.revokeObjectURL(url);};
+  img.src=url;
+}
+
+// Drag & Drop
+const prevArea=$('preview-area');
+['dragenter','dragover'].forEach(ev=>prevArea.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();prevArea.classList.add('dragover')}));
+['dragleave','dragend'].forEach(ev=>prevArea.addEventListener(ev,e=>{e.preventDefault();prevArea.classList.remove('dragover')}));
+prevArea.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();prevArea.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)loadFile(f)});
+window.addEventListener('dragover',e=>e.preventDefault());
+window.addEventListener('drop',e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f)loadFile(f)});
+
+/* ═══════════════════════════════════════════════
+   TABS & MODE
+═══════════════════════════════════════════════ */
+function sw(id){
+  curPanel=id;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===id));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='panel-'+id));
+  if(id==='color')requestAnimationFrame(drawCurve);
+  if(id==='tone')requestAnimationFrame(drawHistogram);
+}
+function setMode(mode){
+  curMode=mode;
+  $('mb-easy').classList.toggle('on',mode==='easy');
+  $('mb-pro').classList.toggle('on',mode==='pro');
+  document.querySelectorAll('.tab').forEach(t=>{
+    const m=t.dataset.m;
+    t.style.display=(m===undefined||m===mode)?'':'none';
+  });
+  if(mode==='easy')sw('efilter');else sw('tone');
+}
+
+/* ═══════════════════════════════════════════════
+   MOBILE RESIZE
+═══════════════════════════════════════════════ */
+(()=>{
+  const h=$('mob-resize');if(!h)return;
+  let drag=false,startY=0,startH=0;
+  h.addEventListener('pointerdown',e=>{
+    if(window.innerWidth>=768)return;
+    drag=true;startY=e.clientY;startH=$('preview-area').clientHeight;
+    h.setPointerCapture(e.pointerId);e.preventDefault();
+  },{passive:false});
+  h.addEventListener('pointermove',e=>{
+    if(!drag||window.innerWidth>=768)return;
+    const newH=Math.max(80,Math.min(window.innerHeight*0.8,startH+(e.clientY-startY)));
+    document.documentElement.style.setProperty('--mobile-prev',newH+'px');
+    if(srcImg)scheduleRender();
+  },{passive:true});
+  const end=()=>{drag=false};
+  h.addEventListener('pointerup',end);h.addEventListener('pointercancel',end);
+})();
+
+/* ═══════════════════════════════════════════════
+   DESKTOP SPLIT
+═══════════════════════════════════════════════ */
+(()=>{
+  const h=$('split-handle');if(!h)return;
+  let drag=false;
+  h.addEventListener('mousedown',e=>{drag=true;h.classList.add('drag');e.preventDefault()});
+  document.addEventListener('mousemove',e=>{
+    if(!drag)return;
+    const r=$('app').getBoundingClientRect();
+    const p=Math.max(18,Math.min(75,((e.clientX-r.left)/r.width)*100));
+    document.documentElement.style.setProperty('--split',p+'%');
+    if(srcImg)scheduleRender();
+  });
+  document.addEventListener('mouseup',()=>{drag=false;h.classList.remove('drag')});
+  function pos(){const lp=$('left-pane');if(lp)h.style.left=(lp.getBoundingClientRect().right-4)+'px'}
+  const lp=$('left-pane');if(lp)new ResizeObserver(pos).observe(lp);
+})();
+
+/* ═══════════════════════════════════════════════
+   MOSAIC / ROTATE / CROP
+═══════════════════════════════════════════════ */
+const MOS=[4,8,16,32,64];
+function buildMosaicGrid(){
+  const el=$('mos-grid');if(!el)return;
+  el.innerHTML=MOS.map(s=>`<div class="mos-card${mosaicSize===s?' on':''}" onclick="setMosaic(${s})"><div class="mos-sz">${s}px</div><div class="mos-lbl">${s<=4?(L==='ja'?'細':'Fine'):s<=16?(L==='ja'?'中':'Med'):(L==='ja'?'粗':'Coarse')}</div></div>`).join('');
+}
+function setMosaic(s){mosaicSize=s;isDirty=true;buildMosaicGrid();scheduleRender()}
+function clearMosaic(){mosaicSize=0;buildMosaicGrid();scheduleRender()}
+function doRotate(d){rotDeg=(rotDeg+d+360)%360;isDirty=true;scheduleRender()}
+function doFlipH(){fH=!fH;isDirty=true;scheduleRender()}
+function doFlipV(){fV=!fV;isDirty=true;scheduleRender()}
+function pickCrop(el){document.querySelectorAll('.crop-card').forEach(c=>c.classList.remove('on'));el.classList.add('on')}
+
+/* ═══════════════════════════════════════════════
+   RESET
+═══════════════════════════════════════════════ */
+function resetAdj(){
+  adj={...DEF};rotDeg=0;fH=false;fV=false;mosaicSize=0;blurRegions=[];
+  activeFilterId=null;filterIntensity=100;isDirty=false;
+  curves.L=[[0,0],[.25,.25],[.5,.5],[.75,.75],[1,1]];
+  curves.R=[[0,0],[.5,.5],[1,1]];curves.G=[[0,0],[.5,.5],[1,1]];curves.B=[[0,0],[.5,.5],[1,1]];
+  buildAll();scheduleRender();requestAnimationFrame(drawCurve);
+}
+
+/* ═══════════════════════════════════════════════
+   RESOLUTION
+═══════════════════════════════════════════════ */
+const RP=[
+  {l:'Instagram Square',w:1080,h:1080,cat:'SNS'},{l:'Instagram Portrait',w:1080,h:1350,cat:'SNS'},
+  {l:'Instagram Landscape',w:1080,h:566,cat:'SNS'},{l:'Story / Reel',w:1080,h:1920,cat:'SNS'},
+  {l:'X Post',w:1200,h:675,cat:'SNS'},{l:'X Banner',w:1500,h:500,cat:'SNS'},
+  {l:'Facebook OG',w:1200,h:630,cat:'SNS'},{l:'YouTube Thumb',w:1280,h:720,cat:'SNS'},
+  {l:'TikTok',w:1080,h:1920,cat:'SNS'},
+  {l:'HD',w:1280,h:720,cat:'HD'},{l:'Full HD',w:1920,h:1080,cat:'HD'},
+  {l:'2K QHD',w:2560,h:1440,cat:'HD'},{l:'4K UHD',w:3840,h:2160,cat:'HD'},{l:'8K',w:7680,h:4320,cat:'HD'},
+  {l:'A4 横',w:3508,h:2480,cat:'Print'},{l:'A4 縦',w:2480,h:3508,cat:'Print'},
+  {l:'A3 横',w:4961,h:3508,cat:'Print'},{l:'A3 縦',w:3508,h:4961,cat:'Print'},
+  {l:'Square 1K',w:1000,h:1000,cat:'Square'},{l:'Square 2K',w:2000,h:2000,cat:'Square'},{l:'Square 4K',w:4000,h:4000,cat:'Square'},
+];
+function buildRes(){
+  const el=$('rp-list');if(!el)return;
+  const cats=[...new Set(RP.map(r=>r.cat))];
+  el.innerHTML=cats.map(cat=>`<div class="rp-cat">${T('rp',cat)||cat}</div>`+
+    RP.filter(r=>r.cat===cat).map(r=>`<div class="rp-item${rw===r.w&&rh===r.h?' on':''}" onclick="pickRP(this,${r.w},${r.h})"><span class="rp-nm">${r.l}</span><span class="rp-dim">${r.w}×${r.h}</span></div>`).join('')).join('');
+}
+function pickRP(el,w,h){document.querySelectorAll('.rp-item').forEach(r=>r.classList.remove('on'));el.classList.add('on');rw=w;rh=h;$('rw').value=w;$('rh').value=h;buildInfo()}
+function onResChange(){rw=+$('rw').value||1080;rh=+$('rh').value||1080;document.querySelectorAll('.rp-item').forEach(r=>r.classList.remove('on'));buildInfo()}
+
+/* ═══════════════════════════════════════════════
+   PRESETS
+═══════════════════════════════════════════════ */
+function showPI(){$('pi-box').style.display='block';setTimeout(()=>$('pi-name').focus(),30)}
+function hidePI(){$('pi-box').style.display='none';$('pi-name').value=''}
+function savePreset(){
+  const n=$('pi-name').value.trim();if(!n)return;
+  myPresets.push({id:Date.now(),name:n,adj:{...adj},curves:JSON.parse(JSON.stringify(curves)),rot:rotDeg,fH,fV});
+  try{localStorage.setItem('lens_v9',JSON.stringify(myPresets))}catch(e){}
+  hidePI();buildPresets();
+}
+function delPreset(id){myPresets=myPresets.filter(p=>p.id!==id);try{localStorage.setItem('lens_v9',JSON.stringify(myPresets))}catch(e){}buildPresets()}
+function applyPreset(id){
+  const bp=FILTERS.find(f=>f.id===id);
+  if(bp){adj={...DEF,...bp.adj};isDirty=true;buildAll();scheduleRender();return}
+  const p=myPresets.find(x=>x.id===id);if(!p)return;
+  adj={...p.adj};if(p.curves)Object.assign(curves,JSON.parse(JSON.stringify(p.curves)));
+  rotDeg=p.rot||0;fH=!!p.fH;fV=!!p.fV;isDirty=true;
+  buildAll();scheduleRender();drawCurve();sw('tone');
+}
+function buildPresets(){
+  const el=$('preset-list');if(!el)return;
+  let html=`<div class="pnl-ttl" style="margin-bottom:7px;font-size:7px">${T('builtin')}</div>`;
+  html+=FILTERS.map(f=>`<div class="pc builtin"><div class="pc-info"><div class="pc-nm">${f.ic} ${L==='en'&&f.nEn?f.nEn:f.nm}</div></div><button class="app-btn" onclick="applyPreset('${f.id}')">${T('apply')}</button></div>`).join('');
+  if(myPresets.length){
+    html+=`<div class="pnl-ttl" style="margin-top:14px;margin-bottom:7px;font-size:7px">${T('myPresets')}</div>`;
+    html+=myPresets.map(p=>{
+      const meta=Object.entries(p.adj).filter(([,v])=>v!==0).slice(0,3).map(([k,v])=>`${k}:${v>0?'+':''}${v}`).join(' · ')||'DEFAULT';
+      return`<div class="pc"><div class="pc-info"><div class="pc-nm">${p.name}</div><div class="pc-meta">${meta}</div></div><button class="app-btn" onclick="applyPreset(${p.id})">${T('apply')}</button><button class="del-btn" onclick="delPreset(${p.id})">${T('del')}</button></div>`;
+    }).join('');
+  }else{
+    html+=`<div class="empty" style="padding:18px 0"><div class="e-ring"><div class="e-dot"></div></div><div class="e-ttl">${T('noPresets')}</div><div class="e-sub">${T('noPresetsSub')}</div></div>`;
+  }
+  el.innerHTML=html;
+}
+
+/* ═══════════════════════════════════════════════
+   INFO
+═══════════════════════════════════════════════ */
+function toggleInfoSec(id){$('ish-'+id).classList.toggle('op');$('isb-'+id).classList.toggle('op')}
+function buildInfo(){
+  const el=$('info-body');if(!el||!imgMeta)return;
+  const rows=[['file',imgMeta.name],['size',imgMeta.size],['type',imgMeta.type],['w',imgMeta.w+' px'],['h',imgMeta.h+' px'],['mp',imgMeta.mp],['ar',imgMeta.ar+':1'],['outW',rw+' px'],['outH',rh+' px']];
+  const active=Object.entries(adj).filter(([,v])=>v!==0);
+  el.innerHTML=rows.map(([k,v])=>`<div class="info-r"><span class="info-k">${T('infoKeys',k)}</span><span class="info-v">${v}</span></div>`).join('')+
+  `<div class="info-sec">
+    <div class="info-sh" id="ish-tech" onclick="toggleInfoSec('tech')"><span class="info-st">${T('techTitle')}</span><span class="info-ch">▾</span></div>
+    <div class="info-sb" id="isb-tech">
+      <div class="idr"><span class="idk">ZOOM</span><span class="idv">${Math.round(lastZoom*100)}%</span></div>
+      <div class="idr"><span class="idk">ROTATION</span><span class="idv">${rotDeg}°${fH?' +FH':''}${fV?' +FV':''}</span></div>
+      <div class="idr"><span class="idk">BLUR REGIONS</span><span class="idv">${blurRegions.length}</span></div>
+    </div>
+  </div>
+  <div class="info-sec">
+    <div class="info-sh" id="ish-adj" onclick="toggleInfoSec('adj')"><span class="info-st">${T('adjTitle')}</span><span class="info-ch">▾</span></div>
+    <div class="info-sb" id="isb-adj">
+      ${active.length?active.map(([k,v])=>`<div class="idr"><span class="idk">${k}</span><span class="idv r">${v>0?'+':''}${v}</span></div>`).join(''):`<div class="idr"><span class="idk">${T('noneAdj')}</span></div>`}
+    </div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════
+   EXPORT
+═══════════════════════════════════════════════ */
+function openExport(){if(!srcImg)return;$('exp-modal').classList.add('op')}
+function closeExport(){$('exp-modal').classList.remove('op')}
+function pickFmt(el,fmt){document.querySelectorAll('.fmt-opt').forEach(e=>e.classList.remove('on'));el.classList.add('on');exportFmt=fmt}
+
+function doExport(){
+  if(!srcImg)return;closeExport();
+  const cv=$('offscreen');
+  cv.width=rw;cv.height=rh;
+  const ctx=cv.getContext('2d');
+  const transp=exportFmt==='transparent';
+  if(!transp){ctx.fillStyle='#fff';ctx.fillRect(0,0,rw,rh)}
+  ctx.save();ctx.translate(rw/2,rh/2);
+  const ang=(rotDeg+adj.angle)*Math.PI/180;if(ang)ctx.rotate(ang);
+  if(fH)ctx.scale(-1,1);if(fV)ctx.scale(1,-1);
+  if(adj.perspH||adj.perspV){ctx.transform(1,adj.perspV/500,adj.perspH/500,1,0,0);}
+  const bri=Math.max(0,1+(adj.brightness+(adj.rawExp||0)*0.5)/100);
+  const con=Math.max(0.01,1+adj.contrast/100);
+  const sat=Math.max(0,1+(adj.saturation+(adj.rawSat||0)*0.5)/100);
+  const blrF=adj.blur>0?`blur(${(adj.blur*0.3).toFixed(2)}px)`:'';
+  const hueF=adj.hue!==0?`hue-rotate(${adj.hue}deg)`:'';
+  ctx.filter=[`brightness(${bri})`,`contrast(${con})`,`saturate(${sat})`,blrF,hueF].filter(Boolean).join(' ');
+  ctx.drawImage(srcImg,-rw/2,-rh/2,rw,rh);ctx.restore();ctx.filter='none';
+  // Pixel ops (same as render)
+  const exposure=(adj.exposure||0)+(adj.rawExp||0);
+  const temperature=(adj.temperature||0)+(adj.rawWB||0);
+  const tint=(adj.tint||0)+(adj.rawTint||0);
+  const vibrance=(adj.vibrance||0)+((adj.rawSat||0)*0.5);
+  const hslActive2=HSL_COLS.some(c=>adj['hH_'+c]||adj['hS_'+c]||adj['hL_'+c]);
+  const crvActive2=curvesActive();
+  const needPx=exposure||temperature||tint||crvActive2||adj.highlights||adj.shadows||adj.blacks||adj.whites||adj.grain||vibrance||adj.clarity||adj.warmShadows||adj.coolHighlights||adj.dehaze||adj.noise||adj.noiseC||adj.chrAb||hslActive2||adj.rr||adj.rg||adj.rb||adj.gr||adj.gg||adj.gb||adj.br||adj.bg2||adj.bb;
+  if(needPx){
+    const lutLE=crvActive2?buildCurveLUT(curves.L):null;
+    const lutRE=crvActive2?buildCurveLUT(curves.R):null;
+    const lutGE=crvActive2?buildCurveLUT(curves.G):null;
+    const lutBE=crvActive2?buildCurveLUT(curves.B):null;
+    const id=ctx.getImageData(0,0,rw,rh);const d=id.data;const n=d.length;
+    const expMul=exposure?Math.pow(2,exposure/100):1;
+    const hiB=adj.highlights/300,shB=adj.shadows/300,blkB=adj.blacks/200,whtB=adj.whites/200;
+    const wshB=(adj.warmShadows||0)/300,chlB=(adj.coolHighlights||0)/300;
+    const dehV=(adj.dehaze||0)/100;const clarV=(adj.clarity||0)/200;
+    for(let i=0;i<n;i+=4){
+      let r=d[i],g=d[i+1],b=d[i+2];
+      if(expMul!==1){r*=expMul;g*=expMul;b*=expMul;}
+      if(temperature>0){r+=temperature*0.5;b-=temperature*0.25;}else if(temperature<0){b+=(-temperature)*0.5;r-=(-temperature)*0.25;}
+      if(tint>0)g+=tint*0.35;else if(tint<0){r+=(-tint)*0.25;b+=(-tint)*0.25;}
+      const lum=(0.299*r+0.587*g+0.114*b)/255;
+      if(adj.highlights&&lum>0.5){const s2=((lum-0.5)/0.5)*hiB;r+=r*s2;g+=g*s2;b+=b*s2;}
+      if(adj.shadows&&lum<0.5){const s2=((0.5-lum)/0.5)*shB;r+=r*s2;g+=g*s2;b+=b*s2;}
+      if(adj.whites&&lum>0.75){const s2=((lum-0.75)/0.25)*whtB;r+=r*s2;g+=g*s2;b+=b*s2;}
+      if(adj.blacks&&lum<0.25){const s2=((0.25-lum)/0.25)*blkB;r-=r*s2;g-=g*s2;b-=b*s2;}
+      if(vibrance){const mx=Math.max(r,g,b);const mn2=Math.min(r,g,b);const curSat=mx>0?(mx-mn2)/mx:0;const boost=(vibrance/100)*(1-curSat)*0.6;const avg=(r+g+b)/3;r+=(r-avg)*boost;g+=(g-avg)*boost;b+=(b-avg)*boost;}
+      if(clarV&&lum>0.05&&lum<0.95){const avg2=(r+g+b)/3/255;const diff=(avg2-lum)*clarV;r+=diff*r;g+=diff*g;b+=diff*b;}
+      if(wshB&&lum<0.5){const s2=((0.5-lum)/0.5)*wshB;r+=s2*30;b-=s2*15;}
+      if(chlB&&lum>0.5){const s2=((lum-0.5)/0.5)*chlB;b+=s2*25;r-=s2*12;}
+      if(dehV){const h=dehV*0.15;r-=h*255*(1-lum);g-=h*255*(1-lum);b-=h*255*(1-lum);}
+      if(adj.grain){const n2=(Math.random()-.5)*adj.grain*0.7;r+=n2;g+=n2;b+=n2;}
+      if(adj.noise){const nAmt=(Math.random()-.5)*adj.noise*1.2;r+=nAmt;g+=nAmt;b+=nAmt;}
+      if(adj.noiseC){r+=(Math.random()-.5)*adj.noiseC*1.0;g+=(Math.random()-.5)*adj.noiseC*1.0;b+=(Math.random()-.5)*adj.noiseC*1.0;}
+      if(adj.chrAb){const lum2=(0.299*r+0.587*g+0.114*b)/255;const ca=adj.chrAb*0.3;r+=ca*(lum2-.5);b-=ca*(lum2-.5);}
+      if(adj.rr||adj.rg||adj.rb||adj.gr||adj.gg||adj.gb||adj.br||adj.bg2||adj.bb){
+        const nr=r+(adj.rr/100)*r+(adj.rg/100)*g+(adj.rb/100)*b;
+        const ng=g+(adj.gr/100)*r+(adj.gg/100)*g+(adj.gb/100)*b;
+        const nb=b+(adj.br/100)*r+(adj.bg2/100)*g+(adj.bb/100)*b;
+        r=nr;g=ng;b=nb;
+      }
+      // Apply RGB curves (export)
+      if(crvActive2){
+        const rie=Math.max(0,Math.min(255,Math.round(r)));
+        const gie=Math.max(0,Math.min(255,Math.round(g)));
+        const bie=Math.max(0,Math.min(255,Math.round(b)));
+        r=lutLE[lutRE[rie]];g=lutLE[lutGE[gie]];b=lutLE[lutBE[bie]];
+      }
+      // HSL per-channel (export)
+      if(hslActive2){
+        const rn=r/255,gn=g/255,bn=b/255;
+        const mx=Math.max(rn,gn,bn),mn=Math.min(rn,gn,bn),d2e=mx-mn;
+        if(d2e>0.01){
+          let h6;
+          if(mx===rn)h6=((gn-bn)/d2e+6)%6;
+          else if(mx===gn)h6=(bn-rn)/d2e+2;
+          else h6=(rn-gn)/d2e+4;
+          const h=h6/6;
+          const hCols=['Red','Orange','Yellow','Green','Aqua','Blue','Purple','Magenta'];
+          const hCenters=[0,1/8,2/8,3/8,4/8,5/8,6/8,7/8];
+          let maxW=0,bestCol='';
+          for(let ci=0;ci<8;ci++){let diff=Math.abs(h-hCenters[ci]);if(diff>0.5)diff=1-diff;const w=Math.max(0,1-diff*8);if(w>maxW){maxW=w;bestCol=hCols[ci];}}
+          if(maxW>0.05){
+            const hShift=adj['hH_'+bestCol]||0,sShift=adj['hS_'+bestCol]||0,lShift=adj['hL_'+bestCol]||0;
+            if(hShift||sShift||lShift){
+              const le=(mx+mn)/2,s2e=d2e/(1-Math.abs(2*le-1));
+              const newH=((h6/6)+(hShift/360)+1)%1,newS=Math.max(0,Math.min(1,s2e*(1+sShift/100))),newLe=Math.max(0,Math.min(1,le+lShift/200));
+              const c2e=newS*(1-Math.abs(2*newLe-1)),x2e=c2e*(1-Math.abs((newH*6)%2-1)),m2e=newLe-c2e/2;
+              let r2e=0,g2e=0,b2e=0;const h2e=newH*6;
+              if(h2e<1){r2e=c2e;g2e=x2e;}else if(h2e<2){r2e=x2e;g2e=c2e;}else if(h2e<3){g2e=c2e;b2e=x2e;}
+              else if(h2e<4){g2e=x2e;b2e=c2e;}else if(h2e<5){r2e=x2e;b2e=c2e;}else{r2e=c2e;b2e=x2e;}
+              r=((r2e+m2e)*maxW+(rn*(1-maxW)))*255;g=((g2e+m2e)*maxW+(gn*(1-maxW)))*255;b=((b2e+m2e)*maxW+(bn*(1-maxW)))*255;
+            }
+          }
+        }
+      }
+      d[i]=clamp(r);d[i+1]=clamp(g);d[i+2]=clamp(b);
+    }
+    ctx.putImageData(id,0,0);
+  }
+  /* Sharpness */
+  if(adj.sharpness>0){
+    const amt=adj.sharpness/100*1.5;
+    const tmp2=document.createElement('canvas');tmp2.width=rw;tmp2.height=rh;
+    const tc2=tmp2.getContext('2d');
+    tc2.filter=`blur(1px)`;tc2.drawImage(cv,0,0);
+    const src3=ctx.getImageData(0,0,rw,rh);
+    const blr2=tc2.getImageData(0,0,rw,rh);
+    const sd2=src3.data,bd2=blr2.data;
+    for(let i=0;i<sd2.length;i+=4){
+      sd2[i]=clamp(sd2[i]+(sd2[i]-bd2[i])*amt);
+      sd2[i+1]=clamp(sd2[i+1]+(sd2[i+1]-bd2[i+1])*amt);
+      sd2[i+2]=clamp(sd2[i+2]+(sd2[i+2]-bd2[i+2])*amt);
+    }
+    ctx.putImageData(src3,0,0);
+  }
+  if(mosaicSize>0){
+    for(let y=0;y<rh;y+=mosaicSize)for(let x=0;x<rw;x+=mosaicSize){
+      const px=ctx.getImageData(x,y,1,1).data;
+      ctx.fillStyle=`rgb(${px[0]},${px[1]},${px[2]})`;ctx.fillRect(x,y,mosaicSize,mosaicSize);
+    }
+  }
+  if(adj.vignette>0&&!transp){
+    const vg=ctx.createRadialGradient(rw/2,rh/2,0,rw/2,rh/2,Math.hypot(rw,rh)*0.55);
+    vg.addColorStop(Math.max(0,1-adj.vignette/100*0.65),'rgba(0,0,0,0)');
+    vg.addColorStop(1,`rgba(0,0,0,${adj.vignette/100*0.88})`);
+    ctx.fillStyle=vg;ctx.fillRect(0,0,rw,rh);
+  }
+  if(adj.fade>0){ctx.fillStyle=`rgba(255,255,255,${adj.fade/100*0.4})`;ctx.fillRect(0,0,rw,rh)}
+  const mime=transp||exportFmt==='png'?'image/png':exportFmt==='webp'?'image/webp':'image/jpeg';
+  const ext2=transp||exportFmt==='png'?'png':exportFmt==='webp'?'webp':'jpg';
+  const a=document.createElement('a');a.download=`lens_${Date.now()}.${ext2}`;
+  a.href=cv.toDataURL(mime,mime==='image/jpeg'?.94:undefined);a.click();isDirty=false;
+}
+
+/* ═══════════════════════════════════════════════
+   HOME / CONFIRM
+═══════════════════════════════════════════════ */
+function goHome(){
+  if(!srcImg)return;
+  if(isDirty){$('confirm').classList.add('op');return}
+  doGoHome();
+}
+function closeConfirm(){$('confirm').classList.remove('op')}
+function confirmGoHome(){closeConfirm();doGoHome()}
+function doGoHome(){
+  srcImg=null;isDirty=false;mosaicSize=0;activeFilterId=null;filterIntensity=100;isRawFile=false;blurRegions=[];
+  adj={...DEF};rotDeg=0;fH=false;fV=false;
+  curves.L=[[0,0],[.25,.25],[.5,.5],[.75,.75],[1,1]];curves.R=[[0,0],[.5,.5],[1,1]];curves.G=[[0,0],[.5,.5],[1,1]];curves.B=[[0,0],[.5,.5],[1,1]];
+  const cv=$('prev-cv');cv.style.display='none';
+  try{const c=cv.getContext('2d');if(c)c.clearRect(0,0,cv.width,cv.height)}catch(e){}
+  $('preview-area').classList.remove('has-img');
+  const ph=$('ph');ph.style.display='';ph.style.opacity='1';ph.style.transition='';
+  $('checker').style.display='none';$('bot').style.display='none';$('exp-hbtn').style.display='none';
+  const badge=$('raw-badge');if(badge)badge.style.display='none';
+  $('zoom-badge').style.display='none';
+  const rawSec=$('raw-sec');if(rawSec)rawSec.remove();
+  buildAll();
+  if(curMode==='easy')sw('efilter');else sw('tone');
+}
+
+window.addEventListener('beforeunload',e=>{if(isDirty&&srcImg){e.preventDefault();e.returnValue=''}});
+
+/* ═══════════════════════════════════════════════
+   HELP
+═══════════════════════════════════════════════ */
+function openHelp(){$('help-modal').classList.add('op');buildHelp()}
+function closeHelp(){$('help-modal').classList.remove('op')}
+function buildHelp(){
+  const el=$('help-content');if(!el)return;
+  const steps=TX[L].helpSteps;
+  el.innerHTML=steps.map(s=>`<div class="help-step"><div class="help-num">${s.n}</div><div><div class="help-ttl">${s.t}</div><div class="help-desc">${s.d}</div></div></div>`).join('')+
+  `<div style="margin-top:14px;padding:12px;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs)">
+    <div style="font-size:7.5px;font-weight:700;letter-spacing:1.5px;color:var(--red);margin-bottom:5px">💡 TIPS</div>
+    <div style="font-size:10px;color:var(--t2);line-height:1.7">${L==='ja'?'・スライダー値をタップすると数値入力できます<br>・プリセット保存でお気に入りの設定を記録<br>・範囲ぼかしでポートレートの背景をぼかせます':'・Tap a slider value to type a number directly<br>・Save presets to remember favorite looks<br>・Use region blur to blur portrait backgrounds'}</div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════
+   CHEKI
+═══════════════════════════════════════════════ */
+function applyCheki(s){
+  const styles={soft:{brightness:15,contrast:-20,saturation:-5,temperature:8,grain:25,fade:38,vignette:15,highlights:18,shadows:8},warm:{brightness:12,contrast:-15,saturation:5,temperature:20,grain:28,fade:32,vignette:18,highlights:15,shadows:10},cool:{brightness:12,contrast:-18,saturation:-8,temperature:-12,grain:22,fade:35,vignette:14,highlights:16,shadows:8}};
+  const st=styles[s];if(!st)return;
+  adj={...DEF,...st};isDirty=true;activeFilterId=null;buildAllSliders();scheduleRender();
+}
+
+/* ═══════════════════════════════════════════════
+   RESIZE OBSERVER
+═══════════════════════════════════════════════ */
+new ResizeObserver(()=>{
+  if(srcImg)scheduleRender();
+  if($('panel-color').classList.contains('on'))requestAnimationFrame(drawCurve);
+}).observe($('preview-area'));
+
+/* ═══════════════════════════════════════════════
+   SPLASH
+═══════════════════════════════════════════════ */
+function dismissSplash(){
+  const sp=$('splash');
+  if(!sp||sp.classList.contains('out'))return;
+  sp.classList.add('out');
+  setTimeout(()=>{if(sp.parentNode)sp.remove()},720);
+}
+$('splash').addEventListener('click',dismissSplash);
+document.addEventListener('keydown',dismissSplash,{once:true});
+
+/* ═══════════════════════════════════════════════
+   EXPOSE + BOOT
+═══════════════════════════════════════════════ */
+Object.assign(window,{
+  toggleLang,setMode,sw,triggerOpen,onFI,openExport,closeExport,pickFmt,doExport,
+  resetAdj,setCvCh,toggleSec,doRotate,doFlipH,doFlipV,pickCrop,
+  onResChange,pickRP,showPI,hidePI,savePreset,delPreset,applyPreset,
+  toggleInfoSec,openNI,closeNI,niKey,
+  goHome,closeConfirm,confirmGoHome,
+  setMosaic,clearMosaic,setHtMode,applyFilter,onPreviewClick,applyCheki,
+  openSettings,closeSettings,setFontSize,toggleHistOv,toggleZoom,setDefaultMode,toggleSaveStg,
+  openHelp,closeHelp,startBlurSel,clearBlurRegions,
+});
+
+function buildAll(){buildAllSliders();buildRes();buildPresets();buildMosaicGrid()}
+
+loadSTG();
+const bootMode=STG.defaultMode||'pro';
+buildAll();
+setMode(bootMode);
+applyLang();
+applySTG();
+syncSTGUI();
+// Draw curve after layout settles
+setTimeout(()=>requestAnimationFrame(drawCurve),100);
+
+})();
+</script>
+</body>
+</html>
